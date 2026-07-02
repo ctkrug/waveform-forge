@@ -68,15 +68,24 @@ export async function demuxToWav(file: File): Promise<ArrayBuffer> {
 
 /**
  * Transcodes a WAV PCM buffer to the requested export format via
- * ffmpeg.wasm, returning a downloadable Blob.
+ * ffmpeg.wasm, returning a downloadable Blob. `onProgress` (0..1) reports
+ * ffmpeg's own progress events for the export progress bar.
  */
 export async function transcode(
   wavBuffer: ArrayBuffer,
   format: ExportFormat,
+  onProgress?: (ratio: number) => void,
 ): Promise<Blob> {
   const ffmpeg = await getFfmpeg();
   const inputName = `trim-${crypto.randomUUID()}.wav`;
   const outputName = OUTPUT_FILENAMES[format];
+
+  const progressListener = ({ progress }: { progress: number }) => {
+    onProgress?.(Math.min(1, Math.max(0, progress)));
+  };
+  if (onProgress) {
+    ffmpeg.on("progress", progressListener);
+  }
 
   await ffmpeg.writeFile(inputName, new Uint8Array(wavBuffer));
   try {
@@ -93,6 +102,9 @@ export async function transcode(
       type: OUTPUT_MIME_TYPES[format],
     });
   } finally {
+    if (onProgress) {
+      ffmpeg.off("progress", progressListener);
+    }
     await ffmpeg.deleteFile(inputName).catch(() => undefined);
     await ffmpeg.deleteFile(outputName).catch(() => undefined);
   }
