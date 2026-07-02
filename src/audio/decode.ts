@@ -8,7 +8,8 @@ export interface DecodeResult {
 
 let sharedContext: AudioContext | null = null;
 
-function getAudioContext(): AudioContext {
+/** Returns the shared AudioContext, creating it lazily on first use (playback + decode). */
+export function getAudioContext(): AudioContext {
   if (!sharedContext) {
     sharedContext = new AudioContext();
   }
