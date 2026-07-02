@@ -35,6 +35,7 @@ re-renders both canvases).
 | `src/lib/spectrogram.ts`     | Sliding-window FFT over PCM -> per-frame magnitude bins; dB conversion/normalization.                                                                |
 | `src/lib/colormap.ts`        | Normalized intensity -> RGB along the studio-scope palette (bg -> green -> amber).                                                                   |
 | `src/lib/trim.ts`            | `clampSelection`/`selectionToSampleRange` — the sample-accurate trim-bounds math.                                                                    |
+| `src/lib/zoom.ts`            | `zoomWindow`/`panWindow` — pivot-preserving zoom and clamped pan over a waveform view window.                                                        |
 | `src/lib/math.ts`            | `clamp`.                                                                                                                                             |
 | `src/audio/formats.ts`       | Intake file validation (size + type), independent of the DOM `File` type.                                                                            |
 | `src/audio/decode.ts`        | `decodeAudioFile` — native decode with ffmpeg.wasm fallback; shared `AudioContext`.                                                                  |
@@ -62,6 +63,14 @@ re-renders both canvases).
   move every animation frame during playback/drag without forcing a full waveform
   redraw, so they're positioned with `style.left` percentages against the same
   container the canvas fills.
+- **Only the waveform zooms/pans.** `WaveformForgeApp` tracks a `viewWindow`
+  (`{start, end}` in seconds, driven by mouse-wheel zoom and click-drag pan on the
+  waveform panel, see `src/lib/zoom.ts`); `render()` slices `monoSamples` to that
+  window before computing the envelope, and `TrimHandles.setViewWindow` keeps handle
+  positions in sync. The spectrogram always shows the full file (recomputing its FFT
+  on every pan would be expensive), so its playhead is positioned against total
+  duration while the waveform's playhead is positioned against the current view
+  window — the two intentionally use different ratios.
 
 ## Testing
 
