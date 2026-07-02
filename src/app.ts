@@ -3,6 +3,7 @@ import { validateAudioFile } from "./audio/formats";
 import { computeSpectrogram } from "./lib/spectrogram";
 import { computeWaveformEnvelope, downmixToMono } from "./lib/waveform";
 import { SpectrogramView } from "./ui/spectrogram-view";
+import { TrimHandles } from "./ui/trim-handles";
 import { WaveformView } from "./ui/waveform-view";
 
 /** FFT size for the spectrogram analysis window; balances frequency vs. time resolution. */
@@ -20,6 +21,10 @@ interface Elements {
   waveformCanvas: HTMLCanvasElement;
   spectrogramCanvas: HTMLCanvasElement;
   waveformWrap: HTMLElement;
+  trimStart: HTMLElement;
+  trimEnd: HTMLElement;
+  trimRegion: HTMLElement;
+  trimReadout: HTMLElement;
 }
 
 function requireElement<T extends Element>(selector: string): T {
@@ -41,6 +46,7 @@ export class WaveformForgeApp {
   private readonly el: Elements;
   private readonly waveformView: WaveformView;
   private readonly spectrogramView: SpectrogramView;
+  private readonly trimHandles: TrimHandles;
   private monoSamples: Float32Array | null = null;
   private spectrogramFrames: ReturnType<typeof computeSpectrogram> | null = null;
 
@@ -56,10 +62,23 @@ export class WaveformForgeApp {
       waveformCanvas: requireElement("[data-waveform-canvas]"),
       spectrogramCanvas: requireElement("[data-spectrogram-canvas]"),
       waveformWrap: requireElement("[data-waveform-wrap]"),
+      trimStart: requireElement("[data-trim-start]"),
+      trimEnd: requireElement("[data-trim-end]"),
+      trimRegion: requireElement("[data-trim-region]"),
+      trimReadout: requireElement("[data-trim-readout]"),
     };
 
     this.waveformView = new WaveformView(this.el.waveformCanvas);
     this.spectrogramView = new SpectrogramView(this.el.spectrogramCanvas);
+    this.trimHandles = new TrimHandles({
+      container: this.el.waveformWrap,
+      startHandle: this.el.trimStart,
+      endHandle: this.el.trimEnd,
+      region: this.el.trimRegion,
+    });
+    this.trimHandles.subscribe((selection) => {
+      this.el.trimReadout.textContent = `trim ${formatDuration(selection.start)}–${formatDuration(selection.end)}`;
+    });
 
     this.wireIntake();
     this.wireResize();
@@ -131,6 +150,9 @@ export class WaveformForgeApp {
         fftSize: SPECTROGRAM_FFT_SIZE,
         hopSize: SPECTROGRAM_HOP_SIZE,
       });
+
+      this.trimHandles.setDuration(buffer.duration);
+      this.el.trimReadout.textContent = `trim ${formatDuration(0)}–${formatDuration(buffer.duration)}`;
 
       this.el.fileName.textContent = file.name;
       this.el.fileDuration.textContent = formatDuration(buffer.duration);
