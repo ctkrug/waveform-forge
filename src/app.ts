@@ -1,5 +1,6 @@
-import { decodeAudioFile } from "./audio/decode";
+import { decodeAudioFile, getAudioContext } from "./audio/decode";
 import { validateAudioFile } from "./audio/formats";
+import { SelectionPlayer } from "./audio/player";
 import { computeSpectrogram } from "./lib/spectrogram";
 import { computeWaveformEnvelope, downmixToMono } from "./lib/waveform";
 import { SpectrogramView } from "./ui/spectrogram-view";
@@ -25,7 +26,14 @@ interface Elements {
   trimEnd: HTMLElement;
   trimRegion: HTMLElement;
   trimReadout: HTMLElement;
+  playhead: HTMLElement;
+  playToggle: HTMLButtonElement;
+  playIcon: HTMLElement;
+  timeReadout: HTMLElement;
 }
+
+const ICON_PLAY = "▶";
+const ICON_PAUSE = "⏸";
 
 function requireElement<T extends Element>(selector: string): T {
   const el = document.querySelector<T>(selector);
@@ -47,8 +55,11 @@ export class WaveformForgeApp {
   private readonly waveformView: WaveformView;
   private readonly spectrogramView: SpectrogramView;
   private readonly trimHandles: TrimHandles;
+  private readonly player: SelectionPlayer;
   private monoSamples: Float32Array | null = null;
   private spectrogramFrames: ReturnType<typeof computeSpectrogram> | null = null;
+  private audioBuffer: AudioBuffer | null = null;
+  private playheadRafId: number | null = null;
 
   constructor() {
     this.el = {
@@ -66,6 +77,10 @@ export class WaveformForgeApp {
       trimEnd: requireElement("[data-trim-end]"),
       trimRegion: requireElement("[data-trim-region]"),
       trimReadout: requireElement("[data-trim-readout]"),
+      playhead: requireElement("[data-playhead]"),
+      playToggle: requireElement("[data-play-toggle]"),
+      playIcon: requireElement("[data-play-icon]"),
+      timeReadout: requireElement("[data-time-readout]"),
     };
 
     this.waveformView = new WaveformView(this.el.waveformCanvas);
@@ -78,10 +93,60 @@ export class WaveformForgeApp {
     });
     this.trimHandles.subscribe((selection) => {
       this.el.trimReadout.textContent = `trim ${formatDuration(selection.start)}–${formatDuration(selection.end)}`;
+      this.updateTimeReadout(selection.start);
     });
+    this.player = new SelectionPlayer(getAudioContext());
+    this.player.subscribe(() => this.onPlaybackEnded());
 
     this.wireIntake();
     this.wireResize();
+    this.wireTransport();
+  }
+
+  private wireTransport(): void {
+    this.el.playToggle.addEventListener("click", () => {
+      if (this.player.playing) {
+        this.player.stop();
+        this.onPlaybackEnded();
+        return;
+      }
+      if (!this.audioBuffer) return;
+      void this.player.play(this.audioBuffer, this.trimHandles.getSelection());
+      this.el.playIcon.textContent = ICON_PAUSE;
+      this.el.playToggle.setAttribute("aria-label", "Pause");
+      this.startPlayheadLoop();
+    });
+  }
+
+  private startPlayheadLoop(): void {
+    const step = () => {
+      const time = this.player.currentTime();
+      if (time === null || !this.audioBuffer) {
+        this.onPlaybackEnded();
+        return;
+      }
+      const ratio =
+        this.audioBuffer.duration === 0 ? 0 : time / this.audioBuffer.duration;
+      this.el.playhead.style.left = `${ratio * 100}%`;
+      this.updateTimeReadout(time);
+      this.playheadRafId = requestAnimationFrame(step);
+    };
+    this.playheadRafId = requestAnimationFrame(step);
+  }
+
+  private onPlaybackEnded(): void {
+    if (this.playheadRafId !== null) {
+      cancelAnimationFrame(this.playheadRafId);
+      this.playheadRafId = null;
+    }
+    this.el.playIcon.textContent = ICON_PLAY;
+    this.el.playToggle.setAttribute("aria-label", "Play");
+    this.updateTimeReadout(this.trimHandles.getSelection().start);
+  }
+
+  private updateTimeReadout(currentTime: number): void {
+    const duration = this.audioBuffer?.duration ?? 0;
+    this.el.timeReadout.textContent = `${formatDuration(currentTime)} / ${formatDuration(duration)}`;
   }
 
   private wireResize(): void {
@@ -139,7 +204,9 @@ export class WaveformForgeApp {
     this.setStatus(`Decoding "${file.name}"...`);
 
     try {
+      this.player.stop();
       const { buffer, usedFallback } = await decodeAudioFile(file);
+      this.audioBuffer = buffer;
       this.monoSamples = downmixToMono(
         Array.from({ length: buffer.numberOfChannels }, (_, i) =>
           buffer.getChannelData(i),
@@ -153,6 +220,8 @@ export class WaveformForgeApp {
 
       this.trimHandles.setDuration(buffer.duration);
       this.el.trimReadout.textContent = `trim ${formatDuration(0)}–${formatDuration(buffer.duration)}`;
+      this.el.playhead.style.left = "0%";
+      this.onPlaybackEnded();
 
       this.el.fileName.textContent = file.name;
       this.el.fileDuration.textContent = formatDuration(buffer.duration);
