@@ -1,5 +1,8 @@
 # Waveform Forge
 
+[![CI](https://github.com/ctkrug/waveform-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/ctkrug/waveform-forge/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Drop an audio file in the browser and get an instant waveform + spectrogram, trim it,
 and export to MP3, AAC, or WAV — **entirely client-side**. Nothing is ever uploaded;
 decoding, analysis, and transcoding all happen on your own machine, in your own tab.
