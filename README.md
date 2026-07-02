@@ -51,7 +51,10 @@ See [`docs/VISION.md`](docs/VISION.md) for the full design rationale and
 
 ## Status
 
-Early scaffold — see the backlog for what's built vs. planned.
+Core pipeline is functional end-to-end: drop a file, see the waveform and spectrogram,
+drag the trim handles, preview playback, and export to MP3/AAC/WAV. See
+[`docs/BACKLOG.md`](docs/BACKLOG.md) for remaining polish work and
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how it's wired together.
 
 ## Local development
 
