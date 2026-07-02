@@ -1,5 +1,3 @@
-const app = document.querySelector<HTMLDivElement>("#app");
+import { WaveformForgeApp } from "./app";
 
-if (app) {
-  app.innerHTML = `<h1>Waveform Forge</h1>`;
-}
+new WaveformForgeApp();
