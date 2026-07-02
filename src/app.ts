@@ -7,6 +7,7 @@ import { encodeWav } from "./audio/wav-encoder";
 import { computeSpectrogram } from "./lib/spectrogram";
 import { selectionToSampleRange } from "./lib/trim";
 import { computeWaveformEnvelope, downmixToMono } from "./lib/waveform";
+import { panWindow, type ViewWindow, zoomWindow } from "./lib/zoom";
 import { SpectrogramView } from "./ui/spectrogram-view";
 import { TrimHandles } from "./ui/trim-handles";
 import { WaveformView } from "./ui/waveform-view";
@@ -69,6 +70,7 @@ export class WaveformForgeApp {
   private spectrogramFrames: ReturnType<typeof computeSpectrogram> | null = null;
   private audioBuffer: AudioBuffer | null = null;
   private playheadRafId: number | null = null;
+  private viewWindow: ViewWindow = { start: 0, end: 0 };
 
   constructor() {
     this.el = {
@@ -116,6 +118,68 @@ export class WaveformForgeApp {
     this.wireResize();
     this.wireTransport();
     this.wireExport();
+    this.wireZoomPan();
+  }
+
+  private wireZoomPan(): void {
+    const { waveformWrap } = this.el;
+
+    waveformWrap.addEventListener(
+      "wheel",
+      (event) => {
+        if (!this.audioBuffer) return;
+        event.preventDefault();
+        const rect = waveformWrap.getBoundingClientRect();
+        const pivotRatio =
+          rect.width === 0 ? 0.5 : (event.clientX - rect.left) / rect.width;
+        const factor = event.deltaY > 0 ? 1.15 : 1 / 1.15;
+        this.setViewWindow(
+          zoomWindow(this.viewWindow, this.audioBuffer.duration, factor, pivotRatio),
+        );
+      },
+      { passive: false },
+    );
+
+    waveformWrap.addEventListener("pointerdown", (event) => {
+      if (!this.audioBuffer) return;
+      if (event.target instanceof HTMLElement && event.target.closest(".trim-handle"))
+        return;
+
+      const rect = waveformWrap.getBoundingClientRect();
+      const startClientX = event.clientX;
+      const startWindow = this.viewWindow;
+      waveformWrap.setPointerCapture(event.pointerId);
+
+      const onMove = (moveEvent: PointerEvent) => {
+        if (!this.audioBuffer || rect.width === 0) return;
+        const deltaSeconds =
+          (-(moveEvent.clientX - startClientX) / rect.width) *
+          (startWindow.end - startWindow.start);
+        this.setViewWindow(
+          panWindow(startWindow, this.audioBuffer.duration, deltaSeconds),
+        );
+      };
+      const onUp = () => {
+        waveformWrap.removeEventListener("pointermove", onMove);
+        waveformWrap.removeEventListener("pointerup", onUp);
+        waveformWrap.removeEventListener("pointercancel", onUp);
+      };
+
+      waveformWrap.addEventListener("pointermove", onMove);
+      waveformWrap.addEventListener("pointerup", onUp);
+      waveformWrap.addEventListener("pointercancel", onUp);
+    });
+
+    waveformWrap.addEventListener("dblclick", () => {
+      if (!this.audioBuffer) return;
+      this.setViewWindow({ start: 0, end: this.audioBuffer.duration });
+    });
+  }
+
+  private setViewWindow(view: ViewWindow): void {
+    this.viewWindow = view;
+    this.trimHandles.setViewWindow(view.start, view.end);
+    this.render();
   }
 
   private wireExport(): void {
@@ -193,13 +257,18 @@ export class WaveformForgeApp {
         this.onPlaybackEnded();
         return;
       }
-      const ratio =
-        this.audioBuffer.duration === 0 ? 0 : time / this.audioBuffer.duration;
-      this.el.playhead.style.left = `${ratio * 100}%`;
+      this.positionPlayhead(time);
       this.updateTimeReadout(time);
       this.playheadRafId = requestAnimationFrame(step);
     };
     this.playheadRafId = requestAnimationFrame(step);
+  }
+
+  /** Positions the playhead overlay relative to the current zoomed/panned view window. */
+  private positionPlayhead(time: number): void {
+    const span = this.viewWindow.end - this.viewWindow.start;
+    const ratio = span === 0 ? 0 : (time - this.viewWindow.start) / span;
+    this.el.playhead.style.left = `${ratio * 100}%`;
   }
 
   private onPlaybackEnded(): void {
@@ -209,7 +278,9 @@ export class WaveformForgeApp {
     }
     this.el.playIcon.textContent = ICON_PLAY;
     this.el.playToggle.setAttribute("aria-label", "Play");
-    this.updateTimeReadout(this.trimHandles.getSelection().start);
+    const start = this.trimHandles.getSelection().start;
+    this.positionPlayhead(start);
+    this.updateTimeReadout(start);
   }
 
   private updateTimeReadout(currentTime: number): void {
@@ -223,9 +294,15 @@ export class WaveformForgeApp {
   }
 
   private render(): void {
-    if (!this.monoSamples || !this.spectrogramFrames) return;
+    if (!this.monoSamples || !this.spectrogramFrames || !this.audioBuffer) return;
     const columns = Math.max(1, this.el.waveformCanvas.clientWidth);
-    this.waveformView.render(computeWaveformEnvelope(this.monoSamples, columns));
+    const { startSample, endSample } = selectionToSampleRange(
+      this.viewWindow,
+      this.audioBuffer.sampleRate,
+      this.monoSamples.length,
+    );
+    const visibleSamples = this.monoSamples.subarray(startSample, endSample);
+    this.waveformView.render(computeWaveformEnvelope(visibleSamples, columns));
     this.spectrogramView.render(this.spectrogramFrames);
   }
 
@@ -287,6 +364,7 @@ export class WaveformForgeApp {
       });
 
       this.trimHandles.setDuration(buffer.duration);
+      this.viewWindow = { start: 0, end: buffer.duration };
       this.el.trimReadout.textContent = `trim ${formatDuration(0)}–${formatDuration(buffer.duration)}`;
       this.el.playhead.style.left = "0%";
       this.onPlaybackEnded();
