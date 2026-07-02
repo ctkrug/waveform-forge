@@ -5,6 +5,7 @@ node_modules/
 dist/
 site/
 *.local
+*.tsbuildinfo
 
 # ffmpeg.wasm core assets are fetched at build/runtime, not vendored
 public/ffmpeg/
