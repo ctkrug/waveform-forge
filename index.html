@@ -4,11 +4,107 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Waveform Forge</title>
+    <meta
+      name="description"
+      content="Drop an audio file and get an instant waveform + spectrogram, trim it, and export to MP3/AAC/WAV — entirely in your browser."
+    />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="./src/style.css" />
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app" class="app">
+      <header class="topbar">
+        <h1 class="wordmark" data-wordmark aria-label="Waveform Forge">
+          <span>WAVEFORM FORGE</span>
+        </h1>
+        <div class="file-meta">
+          <span class="file-name" data-file-name>NO SIGNAL</span>
+          <span class="file-duration" data-file-duration></span>
+        </div>
+      </header>
+
+      <main class="scope-panel" data-scope-panel>
+        <div
+          class="dropzone"
+          data-dropzone
+          tabindex="0"
+          role="button"
+          aria-label="Drop an audio file, or press to choose one"
+        >
+          <p class="dropzone-title">NO SIGNAL — DROP A FILE</p>
+          <p class="dropzone-hint">
+            or click to choose &mdash; MP3, WAV, AAC, FLAC, OGG, M4A
+          </p>
+          <input
+            type="file"
+            accept="audio/*"
+            data-file-input
+            class="visually-hidden"
+            aria-hidden="true"
+            tabindex="-1"
+          />
+        </div>
+
+        <div class="scope-stack" data-scope-stack hidden>
+          <div class="canvas-wrap waveform-wrap" data-waveform-wrap>
+            <canvas data-waveform-canvas></canvas>
+            <div
+              class="trim-handle trim-handle-start"
+              data-trim-start
+              tabindex="0"
+              role="slider"
+              aria-label="Trim start"
+              aria-valuemin="0"
+              aria-valuemax="0"
+              aria-valuenow="0"
+            ></div>
+            <div class="trim-region" data-trim-region></div>
+            <div
+              class="trim-handle trim-handle-end"
+              data-trim-end
+              tabindex="0"
+              role="slider"
+              aria-label="Trim end"
+              aria-valuemin="0"
+              aria-valuemax="0"
+              aria-valuenow="0"
+            ></div>
+            <div class="playhead" data-playhead></div>
+          </div>
+          <div class="canvas-wrap spectrogram-wrap">
+            <canvas data-spectrogram-canvas></canvas>
+          </div>
+        </div>
+
+        <p class="status-line" role="status" aria-live="polite" data-status-line></p>
+      </main>
+
+      <footer class="transport" data-transport hidden>
+        <button class="btn btn-icon" data-play-toggle type="button" aria-label="Play">
+          <span data-play-icon aria-hidden="true">&#9658;</span>
+        </button>
+        <span class="time-readout" data-time-readout>00:00.000 / 00:00.000</span>
+        <span class="trim-readout" data-trim-readout>trim 00:00.000&ndash;00:00.000</span>
+        <label class="field">
+          <span class="field-label">Format</span>
+          <select class="select" data-format-select>
+            <option value="mp3">MP3</option>
+            <option value="aac">AAC</option>
+            <option value="wav">WAV</option>
+          </select>
+        </label>
+        <button class="btn btn-primary" data-export-button type="button">Export</button>
+        <a class="btn btn-primary visually-hidden" data-download-link href="#" download
+          >Download</a
+        >
+      </footer>
+    </div>
     <script type="module" src="./src/main.ts"></script>
   </body>
 </html>
