@@ -235,6 +235,12 @@ body {
 .waveform-wrap {
   flex: 3;
   min-height: 140px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.waveform-wrap:active {
+  cursor: grabbing;
 }
 
 .spectrogram-wrap {
