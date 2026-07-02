@@ -11,17 +11,17 @@ details), and the waveform/spectrogram trace is the one glowing thing in the roo
 
 ## 2. Tokens
 
-| Token | Value | Use |
-|---|---|---|
-| `--bg` | `#15171b` | page background — brushed-metal charcoal |
-| `--surface-1` | `#1f222a` | rack panel surface (toolbar, transport strip) |
-| `--surface-2` | `#292d37` | raised control surface (buttons, selects, cards) |
-| `--text` | `#e9e7df` | primary text — warm backlit-label off-white |
-| `--text-muted` | `#8a8f9c` | secondary/meta text |
-| `--accent` | `#39ff88` | phosphor-green — scope trace, primary actions, focus ring |
+| Token              | Value     | Use                                                         |
+| ------------------ | --------- | ----------------------------------------------------------- |
+| `--bg`             | `#15171b` | page background — brushed-metal charcoal                    |
+| `--surface-1`      | `#1f222a` | rack panel surface (toolbar, transport strip)               |
+| `--surface-2`      | `#292d37` | raised control surface (buttons, selects, cards)            |
+| `--text`           | `#e9e7df` | primary text — warm backlit-label off-white                 |
+| `--text-muted`     | `#8a8f9c` | secondary/meta text                                         |
+| `--accent`         | `#39ff88` | phosphor-green — scope trace, primary actions, focus ring   |
 | `--accent-support` | `#ffb020` | amber — panel lighting, secondary highlights, active meters |
-| `--danger` | `#ff5252` | clip warnings, decode/export errors |
-| `--success` | `#39ff88` | shares the phosphor accent (export complete, valid file) |
+| `--danger`         | `#ff5252` | clip warnings, decode/export errors                         |
+| `--success`        | `#39ff88` | shares the phosphor accent (export complete, valid file)    |
 
 - **Type pairing:** `JetBrains Mono` (display — wordmark, headings, numeric readouts:
   timecodes, Hz labels, dB values look native in a monospace) + `Inter` (UI — body copy,
