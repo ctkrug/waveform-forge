@@ -19,6 +19,8 @@ export interface TrimHandlesElements {
  */
 export class TrimHandles {
   private duration = 0;
+  private viewStart = 0;
+  private viewEnd = 0;
   private selection: TrimSelection = { start: 0, end: 0 };
   private onChange: (selection: TrimSelection) => void = () => {};
 
@@ -30,9 +32,18 @@ export class TrimHandles {
   /** Resets the selection to the full duration of a newly loaded file. */
   setDuration(duration: number): void {
     this.duration = duration;
+    this.viewStart = 0;
+    this.viewEnd = duration;
     this.selection = { start: 0, end: duration };
     this.el.startHandle.setAttribute("aria-valuemax", String(duration));
     this.el.endHandle.setAttribute("aria-valuemax", String(duration));
+    this.reposition();
+  }
+
+  /** Updates the visible time window (for zoom/pan) without changing the selection. */
+  setViewWindow(start: number, end: number): void {
+    this.viewStart = start;
+    this.viewEnd = end;
     this.reposition();
   }
 
@@ -52,13 +63,16 @@ export class TrimHandles {
 
   private reposition(): void {
     const { start, end } = this.selection;
-    const startPct = this.duration === 0 ? 0 : (start / this.duration) * 100;
-    const endPct = this.duration === 0 ? 0 : (end / this.duration) * 100;
+    const span = this.viewEnd - this.viewStart;
+    const toPct = (time: number) =>
+      span === 0 ? 0 : ((time - this.viewStart) / span) * 100;
+    const startPct = toPct(start);
+    const endPct = toPct(end);
 
     this.el.startHandle.style.left = `${startPct}%`;
     this.el.endHandle.style.left = `${endPct}%`;
-    this.el.region.style.left = `${startPct}%`;
-    this.el.region.style.width = `${Math.max(0, endPct - startPct)}%`;
+    this.el.region.style.left = `${Math.max(0, startPct)}%`;
+    this.el.region.style.width = `${Math.max(0, Math.min(100, endPct) - Math.max(0, startPct))}%`;
     this.el.startHandle.setAttribute("aria-valuenow", start.toFixed(3));
     this.el.endHandle.setAttribute("aria-valuenow", end.toFixed(3));
   }
@@ -66,7 +80,8 @@ export class TrimHandles {
   private timeFromClientX(clientX: number): number {
     const rect = this.el.container.getBoundingClientRect();
     const ratio = rect.width === 0 ? 0 : (clientX - rect.left) / rect.width;
-    return Math.min(1, Math.max(0, ratio)) * this.duration;
+    const span = this.viewEnd - this.viewStart;
+    return this.viewStart + Math.min(1, Math.max(0, ratio)) * span;
   }
 
   private wireHandle(handle: HTMLElement, which: "start" | "end"): void {
