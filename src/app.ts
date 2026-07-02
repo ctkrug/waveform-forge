@@ -32,6 +32,7 @@ interface Elements {
   trimRegion: HTMLElement;
   trimReadout: HTMLElement;
   playhead: HTMLElement;
+  spectrogramPlayhead: HTMLElement;
   playToggle: HTMLButtonElement;
   playIcon: HTMLElement;
   timeReadout: HTMLElement;
@@ -89,6 +90,7 @@ export class WaveformForgeApp {
       trimRegion: requireElement("[data-trim-region]"),
       trimReadout: requireElement("[data-trim-readout]"),
       playhead: requireElement("[data-playhead]"),
+      spectrogramPlayhead: requireElement("[data-spectrogram-playhead]"),
       playToggle: requireElement("[data-play-toggle]"),
       playIcon: requireElement("[data-play-icon]"),
       timeReadout: requireElement("[data-time-readout]"),
@@ -264,11 +266,19 @@ export class WaveformForgeApp {
     this.playheadRafId = requestAnimationFrame(step);
   }
 
-  /** Positions the playhead overlay relative to the current zoomed/panned view window. */
+  /**
+   * Positions both playhead overlays. The waveform's tracks the current
+   * zoomed/panned view window; the spectrogram always shows the full file
+   * (it doesn't zoom), so its playhead tracks against total duration.
+   */
   private positionPlayhead(time: number): void {
     const span = this.viewWindow.end - this.viewWindow.start;
-    const ratio = span === 0 ? 0 : (time - this.viewWindow.start) / span;
-    this.el.playhead.style.left = `${ratio * 100}%`;
+    const waveformRatio = span === 0 ? 0 : (time - this.viewWindow.start) / span;
+    this.el.playhead.style.left = `${waveformRatio * 100}%`;
+
+    const duration = this.audioBuffer?.duration ?? 0;
+    const spectrogramRatio = duration === 0 ? 0 : time / duration;
+    this.el.spectrogramPlayhead.style.left = `${spectrogramRatio * 100}%`;
   }
 
   private onPlaybackEnded(): void {
@@ -367,6 +377,7 @@ export class WaveformForgeApp {
       this.viewWindow = { start: 0, end: buffer.duration };
       this.el.trimReadout.textContent = `trim ${formatDuration(0)}–${formatDuration(buffer.duration)}`;
       this.el.playhead.style.left = "0%";
+      this.el.spectrogramPlayhead.style.left = "0%";
       this.onPlaybackEnded();
 
       this.el.fileName.textContent = file.name;
