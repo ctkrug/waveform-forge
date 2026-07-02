@@ -189,6 +189,11 @@ body {
   border-color: var(--danger);
 }
 
+.dropzone.is-loading {
+  cursor: progress;
+  border-color: var(--accent-support);
+}
+
 .dropzone-title {
   margin: 0;
   font-family: var(--font-display);
@@ -201,6 +206,28 @@ body {
 .dropzone.is-error .dropzone-title {
   color: var(--danger);
   text-shadow: none;
+}
+
+.dropzone.is-loading .dropzone-title {
+  color: var(--accent-support);
+  text-shadow: 0 0 12px rgb(255 176 32 / 0.45);
+  animation: dropzone-pulse 1100ms ease-in-out infinite;
+}
+
+@keyframes dropzone-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropzone.is-loading .dropzone-title {
+    animation: none;
+  }
 }
 
 .dropzone-hint {

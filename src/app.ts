@@ -18,6 +18,7 @@ const SPECTROGRAM_HOP_SIZE = 512;
 
 interface Elements {
   dropzone: HTMLElement;
+  dropzoneTitle: HTMLElement;
   fileInput: HTMLInputElement;
   scopeStack: HTMLElement;
   statusLine: HTMLElement;
@@ -45,6 +46,8 @@ interface Elements {
 
 const ICON_PLAY = "▶";
 const ICON_PAUSE = "⏸";
+const DROPZONE_IDLE_TITLE = "NO SIGNAL — DROP A FILE";
+const DROPZONE_LOADING_TITLE = "DECODING...";
 
 function requireElement<T extends Element>(selector: string): T {
   const el = document.querySelector<T>(selector);
@@ -76,6 +79,7 @@ export class WaveformForgeApp {
   constructor() {
     this.el = {
       dropzone: requireElement("[data-dropzone]"),
+      dropzoneTitle: requireElement("[data-dropzone-title]"),
       fileInput: requireElement("[data-file-input]"),
       scopeStack: requireElement("[data-scope-stack]"),
       statusLine: requireElement("[data-status-line]"),
@@ -357,6 +361,8 @@ export class WaveformForgeApp {
     }
 
     this.setStatus(`Decoding "${file.name}"...`);
+    this.el.dropzone.classList.add("is-loading");
+    this.el.dropzoneTitle.textContent = DROPZONE_LOADING_TITLE;
 
     try {
       this.player.stop();
@@ -380,6 +386,8 @@ export class WaveformForgeApp {
       this.el.spectrogramPlayhead.style.left = "0%";
       this.onPlaybackEnded();
 
+      this.el.dropzone.classList.remove("is-loading");
+      this.el.dropzoneTitle.textContent = DROPZONE_IDLE_TITLE;
       this.el.fileName.textContent = file.name;
       this.el.fileDuration.textContent = formatDuration(buffer.duration);
       this.el.dropzone.hidden = true;
@@ -407,6 +415,8 @@ export class WaveformForgeApp {
     this.el.statusLine.textContent = message;
     this.el.statusLine.classList.add("is-error");
     this.el.dropzone.classList.add("is-error");
+    this.el.dropzone.classList.remove("is-loading");
+    this.el.dropzoneTitle.textContent = DROPZONE_IDLE_TITLE;
     this.el.dropzone.hidden = false;
     this.el.scopeStack.hidden = true;
     this.el.transport.hidden = true;
