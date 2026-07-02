@@ -1,7 +1,11 @@
 import { decodeAudioFile, getAudioContext } from "./audio/decode";
+import { type ExportFormat, transcode } from "./audio/ffmpeg-client";
 import { validateAudioFile } from "./audio/formats";
 import { SelectionPlayer } from "./audio/player";
+import { sliceChannels } from "./audio/trim-export";
+import { encodeWav } from "./audio/wav-encoder";
 import { computeSpectrogram } from "./lib/spectrogram";
+import { selectionToSampleRange } from "./lib/trim";
 import { computeWaveformEnvelope, downmixToMono } from "./lib/waveform";
 import { SpectrogramView } from "./ui/spectrogram-view";
 import { TrimHandles } from "./ui/trim-handles";
@@ -30,6 +34,11 @@ interface Elements {
   playToggle: HTMLButtonElement;
   playIcon: HTMLElement;
   timeReadout: HTMLElement;
+  formatSelect: HTMLSelectElement;
+  exportButton: HTMLButtonElement;
+  exportProgress: HTMLElement;
+  exportProgressBar: HTMLElement;
+  downloadLink: HTMLAnchorElement;
 }
 
 const ICON_PLAY = "▶";
@@ -81,6 +90,11 @@ export class WaveformForgeApp {
       playToggle: requireElement("[data-play-toggle]"),
       playIcon: requireElement("[data-play-icon]"),
       timeReadout: requireElement("[data-time-readout]"),
+      formatSelect: requireElement("[data-format-select]"),
+      exportButton: requireElement("[data-export-button]"),
+      exportProgress: requireElement("[data-export-progress]"),
+      exportProgressBar: requireElement("[data-export-progress-bar]"),
+      downloadLink: requireElement("[data-download-link]"),
     };
 
     this.waveformView = new WaveformView(this.el.waveformCanvas);
@@ -101,6 +115,60 @@ export class WaveformForgeApp {
     this.wireIntake();
     this.wireResize();
     this.wireTransport();
+    this.wireExport();
+  }
+
+  private wireExport(): void {
+    this.el.exportButton.addEventListener("click", () => void this.runExport());
+  }
+
+  private async runExport(): Promise<void> {
+    const buffer = this.audioBuffer;
+    if (!buffer) return;
+
+    const format = this.el.formatSelect.value as ExportFormat;
+    const selection = this.trimHandles.getSelection();
+    const { startSample, endSample } = selectionToSampleRange(
+      selection,
+      buffer.sampleRate,
+      buffer.length,
+    );
+    const channels = Array.from({ length: buffer.numberOfChannels }, (_, i) =>
+      buffer.getChannelData(i),
+    );
+    const trimmed = sliceChannels(channels, startSample, endSample);
+    const wav = encodeWav(trimmed, buffer.sampleRate);
+
+    this.el.exportButton.disabled = true;
+    this.el.exportProgress.hidden = false;
+    this.el.exportProgressBar.style.width = "0%";
+    this.setStatus(`Exporting to ${format.toUpperCase()}...`);
+
+    try {
+      const blob = await transcode(wav, format, (ratio) => {
+        this.el.exportProgressBar.style.width = `${ratio * 100}%`;
+      });
+      const url = URL.createObjectURL(blob);
+      this.el.downloadLink.href = url;
+      this.el.downloadLink.download = this.exportFileName(format);
+      this.el.downloadLink.click();
+      // Defer revocation so the browser has started reading the blob for
+      // download before its URL is invalidated.
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      this.setStatus(`Exported ${format.toUpperCase()}.`);
+    } catch (error) {
+      this.showError(
+        error instanceof Error ? `Export failed: ${error.message}` : "Export failed.",
+      );
+    } finally {
+      this.el.exportButton.disabled = false;
+      this.el.exportProgress.hidden = true;
+    }
+  }
+
+  private exportFileName(format: ExportFormat): string {
+    const base = (this.el.fileName.textContent ?? "export").replace(/\.[^.]+$/, "");
+    return `${base}-trim.${format}`;
   }
 
   private wireTransport(): void {
