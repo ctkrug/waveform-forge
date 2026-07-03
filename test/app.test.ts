@@ -631,6 +631,23 @@ describe("WaveformForgeApp playback", () => {
     expect(elements.playIcon.textContent).toBe("");
   });
 
+  it("shows a playback-failed status and leaves the transport paused when play() rejects", async () => {
+    await createApp();
+    await loadFile();
+    fakeAudioContext.state = "suspended";
+    fakeAudioContext.resume = vi.fn().mockRejectedValueOnce(new Error("NotAllowedError"));
+
+    elements.playToggle.dispatch("click");
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(elements.statusLine.textContent).toBe("Playback failed: NotAllowedError");
+    expect(elements.statusLine.classList.contains("is-error")).toBe(true);
+    expect(elements.playIcon.textContent).toBe("▶");
+    expect(fakeAudioContext.createBufferSource).not.toHaveBeenCalled();
+  });
+
   it("triggers the transport button via the spacebar when focus isn't on a control", async () => {
     await createApp();
     await loadFile();
