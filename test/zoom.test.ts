@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { MIN_VIEW_SECONDS, panWindow, zoomWindow } from "../src/lib/zoom";
+import {
+  MIN_VIEW_SECONDS,
+  panWindow,
+  pinchZoomFactor,
+  zoomWindow,
+} from "../src/lib/zoom";
 
 describe("zoomWindow", () => {
   it("shrinks the window when zooming in", () => {
@@ -54,5 +59,27 @@ describe("panWindow", () => {
   it("preserves the window span", () => {
     const result = panWindow({ start: 2, end: 6 }, 10, 1);
     expect(result.end - result.start).toBe(4);
+  });
+});
+
+describe("pinchZoomFactor", () => {
+  it("returns a factor below 1 when fingers spread apart (zoom in)", () => {
+    expect(pinchZoomFactor(100, 200)).toBeCloseTo(0.5, 9);
+  });
+
+  it("returns a factor above 1 when fingers pinch together (zoom out)", () => {
+    expect(pinchZoomFactor(200, 100)).toBeCloseTo(2, 9);
+  });
+
+  it("returns 1 for an unchanged distance", () => {
+    expect(pinchZoomFactor(150, 150)).toBeCloseTo(1, 9);
+  });
+
+  it("returns null for a zero start distance", () => {
+    expect(pinchZoomFactor(0, 100)).toBeNull();
+  });
+
+  it("returns null for a zero current distance", () => {
+    expect(pinchZoomFactor(100, 0)).toBeNull();
   });
 });
