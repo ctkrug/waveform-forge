@@ -28,4 +28,14 @@ describe("resolvePlaybackTime", () => {
     expect(resolvePlaybackTime(3, 5, 5, true)).toBe(5);
     expect(resolvePlaybackTime(3, 5, 5, false)).toBe(5);
   });
+
+  it("wraps a negative elapsed time forward instead of returning a negative offset", () => {
+    // JS's `%` can return a negative result for a negative dividend
+    // (-1 % 4 === -1, not 3) — resolvePlaybackTime corrects for that so a
+    // caller can never be handed a position before the selection start.
+    // Not reachable via SelectionPlayer today (context.currentTime only
+    // advances), but the correction is explicit in the source, so it's
+    // worth locking in as a regression guard.
+    expect(resolvePlaybackTime(-1, 2, 6, true)).toBeCloseTo(5, 9);
+  });
 });
