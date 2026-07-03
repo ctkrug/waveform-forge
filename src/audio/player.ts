@@ -1,3 +1,4 @@
+import { rmsAmplitude } from "../lib/meter";
 import { resolvePlaybackTime } from "../lib/playback";
 import type { TrimSelection } from "../lib/trim";
 
@@ -96,16 +97,23 @@ export class SelectionPlayer {
     }
   }
 
-  /** Peak absolute sample amplitude (0..1+) over the most recent audio frame, or 0 when stopped. */
-  peakLevel(): number {
-    if (!this.sourceNode) return 0;
+  /**
+   * Peak and RMS absolute sample amplitude (0..1+) over the most recent
+   * audio frame, both `0` when stopped. Read together from a single
+   * analyser snapshot — the meter needs both every animation frame (RMS
+   * for the fill, peak for clip detection), and `AnalyserNode` data only
+   * updates once per frame anyway, so a second `getFloatTimeDomainData`
+   * call would just re-read the same snapshot at twice the cost.
+   */
+  levels(): { peak: number; rms: number } {
+    if (!this.sourceNode) return { peak: 0, rms: 0 };
     this.analyser.getFloatTimeDomainData(this.analyserBuffer);
     let peak = 0;
     for (const sample of this.analyserBuffer) {
       const abs = Math.abs(sample);
       if (abs > peak) peak = abs;
     }
-    return peak;
+    return { peak, rms: rmsAmplitude(this.analyserBuffer) };
   }
 
   /** Current absolute playback position in seconds within the full file, or null when stopped. */
