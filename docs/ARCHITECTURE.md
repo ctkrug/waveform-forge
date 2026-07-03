@@ -142,7 +142,8 @@ call order/arguments (`test/axis.test.ts`, `test/waveform-view.test.ts`,
 (`test/level-meter.test.ts`). No `jsdom`/`happy-dom` dependency, no real `<canvas>` —
 just enough surface to drive the real class through its real code path. Run
 `npm run test:coverage` to see where the gaps are; the `src/ui` and `src/lib` layers
-are both at 100% statement coverage as of this pass.
+are both at 100% statement coverage, and the whole `src/` tree is ~99.8% as of this
+pass (up from ~58% before `app.ts`/`decode.ts`/`player.ts` got test coverage).
 
 `src/audio/ffmpeg-client.ts` is unit-tested too, but with `vi.mock` rather than a
 duck-typed fake: `test/ffmpeg-client.test.ts` mocks the `@ffmpeg/ffmpeg` /
@@ -154,10 +155,32 @@ timing the module's own singleton state manages, not on any DOM surface. Each te
 calls `vi.resetModules()` and re-imports the module fresh, since that singleton state
 (`instance`/`loadPromise`/`queue`) would otherwise leak between tests in the same file.
 
-Browser-only integration code that genuinely can't be exercised meaningfully outside a
-real browser — `decode.ts` and `player.ts` (real `AudioContext` behavior) and `app.ts`'s
-top-level DOM wiring itself — is verified by running the app (`npm run dev`) rather
-than mocked in tests.
+`decode.ts` and `player.ts` are unit-tested by faking just the `AudioContext` surface
+each touches (`decodeAudioData`, `createAnalyser`, `createBufferSource`, `resume`)
+rather than the real Web Audio API — `test/decode.test.ts`, `test/player.test.ts`.
+`player.test.ts` drives the `playToken` race guard described above (a `stop()`/newer
+`play()` landing during a pending `resume()`) by controlling exactly when the fake
+`resume()` promise settles.
+
+`app.ts` — the 700+-line top-level controller — is driven end-to-end in
+`test/app.test.ts` via the same no-jsdom philosophy as `src/ui/**`, scaled up: a
+selector-keyed fake `document.querySelector` returning `FakeElement` instances
+(subclassed into `FakeButtonElement`/`FakeSelectElement`/etc. so app.ts's
+`event.target instanceof HTMLButtonElement`-style guards resolve correctly), plus
+stubs for `ResizeObserver`, a controllable `requestAnimationFrame` queue (`tickRaf()`
+in the test file runs exactly one queued frame — the playhead poll loop re-queues
+itself every tick, so draining the whole queue at once would infinite-loop),
+`URL.createObjectURL`, and `localStorage`. Only `decode.ts` and `ffmpeg-client.ts` are
+mocked; `SelectionPlayer`, `TrimHandles`, `computeSpectrogram`, and the real WAV
+encode/export pipeline all run for real against the fake DOM. This is what exercises
+the file's documented concurrency guards — `sessionGeneration` abandoning a stale
+decode/export after a reset or a second file load, the playhead-loop double-click
+race, the pinch-zoom fixed-pointer-pair guard — rather than a browser screenshot,
+which only proves the happy path renders.
+
+A manual `npm run dev` pass (plus the D3 design-review checklist) remains the source
+of truth for what no fake DOM can meaningfully assert: real paint timing, hover/focus
+visuals, and actual audio decode/playback across browsers.
 
 ## Build / run
 
