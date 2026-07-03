@@ -102,6 +102,11 @@ export class WaveformForgeApp {
   private readonly activePointers = new Map<number, number>();
   private panState: { startClientX: number; startWindow: ViewWindow } | null = null;
   private pinchState: {
+    // The exact pair of pointer IDs driving this pinch — a third finger
+    // touching down mid-gesture must not change which two pointers we
+    // measure, and one of these two lifting must end the pinch outright
+    // rather than silently re-pairing with whichever pointer is left.
+    pointerIds: [number, number];
     startDistance: number;
     startWindow: ViewWindow;
     pivotRatio: number;
@@ -329,7 +334,7 @@ export class WaveformForgeApp {
 
     const endPointer = (event: PointerEvent) => {
       this.activePointers.delete(event.pointerId);
-      if (this.activePointers.size < 2) this.pinchState = null;
+      if (this.pinchState?.pointerIds.includes(event.pointerId)) this.pinchState = null;
       if (this.activePointers.size === 0) this.panState = null;
     };
     waveformWrap.addEventListener("pointerup", endPointer);
@@ -361,25 +366,26 @@ export class WaveformForgeApp {
 
   /** Captures the starting pinch distance/pivot from the two active touch pointers. */
   private beginPinch(waveformWrap: HTMLElement): {
+    pointerIds: [number, number];
     startDistance: number;
     startWindow: ViewWindow;
     pivotRatio: number;
   } | null {
-    const positions = [...this.activePointers.values()];
-    const [x1, x2] = positions;
+    const pointerIds = [...this.activePointers.keys()] as [number, number];
+    const [x1, x2] = pointerIds.map((id) => this.activePointers.get(id)!);
     const startDistance = Math.abs(x2 - x1);
     if (startDistance === 0) return null;
 
     const rect = waveformWrap.getBoundingClientRect();
     const midClientX = (x1 + x2) / 2;
     const pivotRatio = rect.width === 0 ? 0.5 : (midClientX - rect.left) / rect.width;
-    return { startDistance, startWindow: this.viewWindow, pivotRatio };
+    return { pointerIds, startDistance, startWindow: this.viewWindow, pivotRatio };
   }
 
   /** Applies the live pinch distance as a zoom factor relative to the pinch's start. */
   private applyPinch(): void {
     if (!this.pinchState || !this.audioBuffer) return;
-    const [x1, x2] = [...this.activePointers.values()];
+    const [x1, x2] = this.pinchState.pointerIds.map((id) => this.activePointers.get(id)!);
     const factor = pinchZoomFactor(this.pinchState.startDistance, Math.abs(x2 - x1));
     if (factor === null) return;
 
