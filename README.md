@@ -20,20 +20,15 @@ Web Audio API. Your file never leaves the browser tab.
 
 - **Load** almost any audio file (drag-and-drop or file picker) — MP3, WAV, AAC, FLAC,
   OGG, M4A — decoded locally via the Web Audio API / ffmpeg.wasm demuxer.
-- **Visualize** an interactive waveform (min/max envelope, zoomable) and a spectrogram
-  (FFT-based frequency-over-time heatmap) rendered on `<canvas>`.
-- **Trim** with draggable in/out handles directly on the waveform, with live preview.
+- **Visualize** an interactive waveform (min/max envelope, zoomable/pannable) and a
+  spectrogram (FFT-based frequency-over-time heatmap, adjustable FFT size), both with
+  labeled time/frequency axes and a playhead synced to playback.
+- **Trim** with draggable, keyboard- and touch-nudgeable in/out handles directly on the
+  waveform, with sample-accurate bounds and live preview of just the selection.
 - **Export** the trimmed selection to MP3, AAC, or WAV via `ffmpeg.wasm`, entirely
   in-browser, with a progress indicator and a one-click download.
-
-## Planned features
-
-- Waveform rendering with zoom/pan and a playhead synced to playback.
-- Spectrogram rendering with adjustable FFT size / window function / color map.
-- Draggable trim handles with sample-accurate selection and live audio preview.
-- In-browser transcoding to MP3 / AAC / WAV with adjustable bitrate/sample rate.
-- Drag-and-drop + file-picker input, multi-format decode via ffmpeg.wasm.
-- Fully static, zero-backend deployment — works from a single `dist/` directory.
+- Fully static, zero-backend deployment — works from a single `dist/` directory at any
+  subpath.
 
 ## Stack
 
@@ -51,9 +46,10 @@ See [`docs/VISION.md`](docs/VISION.md) for the full design rationale and
 
 ## Status
 
-Core pipeline is functional end-to-end: drop a file, see the waveform and spectrogram,
-drag the trim handles, preview playback, and export to MP3/AAC/WAV. See
-[`docs/BACKLOG.md`](docs/BACKLOG.md) for remaining polish work and
+Feature-complete end-to-end: drop a file, see the waveform and spectrogram (with
+adjustable FFT size and labeled axes), zoom/pan, drag the trim handles, preview
+playback, and export to MP3/AAC/WAV. A `landing/` marketing page shares the app's
+design tokens. See [`docs/BACKLOG.md`](docs/BACKLOG.md) for the full story breakdown and
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how it's wired together.
 
 ## Local development
