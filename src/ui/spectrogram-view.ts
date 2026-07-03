@@ -52,9 +52,11 @@ export class SpectrogramView {
 
     if (axis) {
       const nyquist = axis.sampleRate / 2;
+      // Skip the 0Hz tick: its label would land in the same corner as the
+      // time axis's 0s label, directly above.
       drawHorizontalTicks(
         ctx,
-        frequencyTicks(nyquist),
+        frequencyTicks(nyquist).filter((tick) => tick.value > 0),
         (hz) => height - (hz / nyquist) * height,
         width,
       );
