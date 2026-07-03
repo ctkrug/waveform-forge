@@ -271,6 +271,11 @@ body {
   cursor: grabbing;
 }
 
+.waveform-wrap:focus-visible {
+  outline: none;
+  box-shadow: var(--glow-accent);
+}
+
 .spectrogram-wrap {
   flex: 2;
   min-height: 100px;
