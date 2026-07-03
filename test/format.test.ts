@@ -49,4 +49,11 @@ describe("formatDuration", () => {
   it("carries a minute-boundary rollover past an existing minute count", () => {
     expect(formatDuration(119.9996)).toBe("02:00.000");
   });
+
+  it("doesn't wrap the minutes field at 60 for an hour-plus recording", () => {
+    // A field recording or podcast take can easily run over an hour;
+    // minutes has no modulus applied, so it should keep counting past 59
+    // rather than wrapping back to an hours:minutes display.
+    expect(formatDuration(3661.5)).toBe("61:01.500");
+  });
 });
