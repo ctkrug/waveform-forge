@@ -50,4 +50,9 @@ describe("selectionToSampleRange", () => {
     const range = selectionToSampleRange({ start: 0, end: 100 }, 44100, 44100);
     expect(range.endSample).toBe(44100);
   });
+
+  it("normalizes an inverted selection instead of returning start > end", () => {
+    const range = selectionToSampleRange({ start: 2, end: 1 }, 44100, 88200);
+    expect(range).toEqual({ startSample: 44100, endSample: 88200 });
+  });
 });
