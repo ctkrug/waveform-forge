@@ -41,6 +41,24 @@ export function clampSelection(
   return { start: clampedStart, end: clampedEnd };
 }
 
+/**
+ * Clamps a proposed time for one edge of a selection so it can't cross the
+ * other edge (keeping at least `MIN_SELECTION_SECONDS` between them). Used
+ * when a single handle is being dragged/keyboard-nudged: `clampSelection`
+ * alone keeps `start <= end` by swapping the two values on a cross, which
+ * is correct for the *data* but would leave whichever DOM element the user
+ * is still moving bound to the wrong (now-swapped) edge.
+ */
+export function clampEdgeAgainstOther(
+  which: "start" | "end",
+  time: number,
+  selection: TrimSelection,
+): number {
+  return which === "start"
+    ? Math.min(time, selection.end - MIN_SELECTION_SECONDS)
+    : Math.max(time, selection.start + MIN_SELECTION_SECONDS);
+}
+
 /** Converts a time-based selection to inclusive-start/exclusive-end sample indices. */
 export function selectionToSampleRange(
   selection: TrimSelection,

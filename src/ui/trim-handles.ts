@@ -1,4 +1,4 @@
-import { clampSelection, MIN_SELECTION_SECONDS, type TrimSelection } from "../lib/trim";
+import { clampEdgeAgainstOther, clampSelection, type TrimSelection } from "../lib/trim";
 
 /** Seconds nudged per arrow-key press; shift multiplies this by 10. */
 const KEY_STEP_SECONDS = 0.05;
@@ -77,20 +77,6 @@ export class TrimHandles {
     this.el.endHandle.setAttribute("aria-valuenow", end.toFixed(3));
   }
 
-  /**
-   * Stops a proposed time for `which` handle from crossing the other
-   * handle. Without this, `clampSelection`'s start/end swap-on-cross keeps
-   * the *values* valid but leaves the DOM element the user is still
-   * dragging/focused on bound to the wrong (now-swapped) role, desyncing
-   * its position and the "Trim start"/"Trim end" label from what it
-   * actually controls.
-   */
-  private clampAgainstOtherHandle(which: "start" | "end", time: number): number {
-    return which === "start"
-      ? Math.min(time, this.selection.end - MIN_SELECTION_SECONDS)
-      : Math.max(time, this.selection.start + MIN_SELECTION_SECONDS);
-  }
-
   private timeFromClientX(clientX: number): number {
     const rect = this.el.container.getBoundingClientRect();
     const ratio = rect.width === 0 ? 0 : (clientX - rect.left) / rect.width;
@@ -104,9 +90,10 @@ export class TrimHandles {
       handle.classList.add("is-dragging");
 
       const onMove = (moveEvent: PointerEvent) => {
-        const time = this.clampAgainstOtherHandle(
+        const time = clampEdgeAgainstOther(
           which,
           this.timeFromClientX(moveEvent.clientX),
+          this.selection,
         );
         if (which === "start") {
           this.setSelection(time, this.selection.end);
@@ -136,10 +123,10 @@ export class TrimHandles {
 
       event.preventDefault();
       if (which === "start") {
-        const time = this.clampAgainstOtherHandle(which, this.selection.start + delta);
+        const time = clampEdgeAgainstOther(which, this.selection.start + delta, this.selection);
         this.setSelection(time, this.selection.end);
       } else {
-        const time = this.clampAgainstOtherHandle(which, this.selection.end + delta);
+        const time = clampEdgeAgainstOther(which, this.selection.end + delta, this.selection);
         this.setSelection(this.selection.start, time);
       }
     });
