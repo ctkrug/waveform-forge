@@ -34,6 +34,12 @@ describe("timeTicks", () => {
     const ticks = timeTicks(100, 110, 5);
     expect(ticks.every((t) => t.value >= 100 && t.value <= 110)).toBe(true);
   });
+
+  it("rounds up to a step of 10x the magnitude when one tick would be too sparse", () => {
+    // span=9, targetCount=1 -> roughStep=9 -> residual=9, the >5 branch.
+    const ticks = timeTicks(0, 9, 1);
+    expect(ticks).toEqual([{ value: 0, label: "0:00" }]);
+  });
 });
 
 describe("frequencyTicks", () => {
