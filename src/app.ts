@@ -87,13 +87,15 @@ export class WaveformForgeApp {
   private audioBuffer: AudioBuffer | null = null;
   private playheadRafId: number | null = null;
   /**
-   * Bumped on every `handleFile` call and captured at its start; if a newer
-   * load has started by the time an older one's decode settles, the older
-   * one's `.then`/`.catch` tail is a no-op instead of clobbering the UI
-   * with a stale result (or a stale error) from a file the user has since
-   * replaced by loading another one before the first finished decoding.
+   * Bumped whenever the loaded file changes: on every `handleFile` call and
+   * on `resetSession`. Async work tied to a specific file (decoding,
+   * exporting) captures the current value at its start and checks it again
+   * after its awaits — if it's since changed, that work's continuation is a
+   * no-op instead of clobbering the UI with a stale result (a decode for a
+   * file the user replaced before it finished, or an export whose download
+   * shouldn't fire once the user has already reset the session).
    */
-  private fileLoadGeneration = 0;
+  private sessionGeneration = 0;
   private viewWindow: ViewWindow = { start: 0, end: 0 };
   private spectrogramFftSize = DEFAULT_SPECTROGRAM_FFT_SIZE;
   private loopEnabled = false;
@@ -218,7 +220,7 @@ export class WaveformForgeApp {
   private resetSession(): void {
     // Invalidate any decode still in flight so it can't repopulate the UI
     // after the user has already asked to go back to the empty state.
-    this.fileLoadGeneration++;
+    this.sessionGeneration++;
     this.player.stop();
     this.onPlaybackEnded();
     this.audioBuffer = null;
@@ -407,6 +409,7 @@ export class WaveformForgeApp {
   private async runExport(): Promise<void> {
     const buffer = this.audioBuffer;
     if (!buffer) return;
+    const generation = this.sessionGeneration;
 
     const format = this.el.formatSelect.value as ExportFormat;
     const selection = this.trimHandles.getSelection();
@@ -430,6 +433,13 @@ export class WaveformForgeApp {
       const blob = await transcode(wav, format, (ratio) => {
         this.el.exportProgressBar.style.width = `${ratio * 100}%`;
       });
+      // The user has since reset the session (or loaded another file) —
+      // don't trigger a download or status update for an export they no
+      // longer have a UI open for. Confirmed live: without this guard, a
+      // "Load new file" click mid-export still silently downloaded the
+      // trimmed clip and left a stale "Exported ..." status behind on the
+      // now-empty dropzone.
+      if (generation !== this.sessionGeneration) return;
       const url = URL.createObjectURL(blob);
       this.el.downloadLink.href = url;
       this.el.downloadLink.download = this.exportFileName(format);
@@ -439,10 +449,15 @@ export class WaveformForgeApp {
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       this.setStatus(`Exported ${format.toUpperCase()}.`);
     } catch (error) {
+      if (generation !== this.sessionGeneration) return;
       this.setStatusError(
         error instanceof Error ? `Export failed: ${error.message}` : "Export failed.",
       );
     } finally {
+      // Always re-enable, even for a stale export: it's the only code path
+      // that clears exportButton.disabled, so skipping it here would leave
+      // the button permanently disabled after a reset-mid-export once a new
+      // file loads (nothing else ever flips it back on).
       this.el.exportButton.disabled = false;
       this.el.exportProgress.hidden = true;
     }
@@ -607,7 +622,7 @@ export class WaveformForgeApp {
   }
 
   private async handleFile(file: File): Promise<void> {
-    const generation = ++this.fileLoadGeneration;
+    const generation = ++this.sessionGeneration;
     this.el.dropzone.classList.remove("is-error");
     const validation = validateAudioFile(file);
     if (!validation.valid) {
@@ -625,7 +640,7 @@ export class WaveformForgeApp {
       // A newer handleFile() call has since started (e.g. the user dropped
       // a second file before this one finished decoding) — that load owns
       // the UI now, so abandon this one rather than clobbering it.
-      if (generation !== this.fileLoadGeneration) return;
+      if (generation !== this.sessionGeneration) return;
       this.audioBuffer = buffer;
       this.monoSamples = downmixToMono(
         Array.from({ length: buffer.numberOfChannels }, (_, i) =>
@@ -662,7 +677,7 @@ export class WaveformForgeApp {
       );
       this.render();
     } catch (error) {
-      if (generation !== this.fileLoadGeneration) return;
+      if (generation !== this.sessionGeneration) return;
       this.showError(
         error instanceof Error
           ? `Couldn't decode "${file.name}": ${error.message}`
