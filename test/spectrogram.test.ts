@@ -53,6 +53,14 @@ describe("magnitudeToDb", () => {
     // ever feeding that through to the floor comparison.
     expect(magnitudeToDb(-5)).toBe(-100);
   });
+
+  it("floors a NaN magnitude instead of leaking NaN into the color ramp", () => {
+    // `magnitude <= 0` alone is false for NaN, so this needs its own guard
+    // (mirrors lib/meter.ts's amplitudeToDb) — a corrupt decoded buffer
+    // could otherwise feed NaN through the FFT into this "always floored"
+    // conversion.
+    expect(magnitudeToDb(NaN)).toBe(-100);
+  });
 });
 
 describe("normalizeDb", () => {

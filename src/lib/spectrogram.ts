@@ -56,7 +56,11 @@ export function computeSpectrogram(
 
 /** Converts a linear magnitude to decibels, floored to avoid -Infinity on silence. */
 export function magnitudeToDb(magnitude: number, floorDb = -100): number {
-  if (magnitude <= 0) return floorDb;
+  // `magnitude <= 0` alone doesn't catch NaN (`NaN <= 0` is false) — see the
+  // same guard in lib/meter.ts's amplitudeToDb. A malformed/corrupt decoded
+  // buffer could otherwise feed a NaN sample through the FFT and leak NaN
+  // out of this "always floored" function into the spectrogram color ramp.
+  if (!(magnitude > 0)) return floorDb;
   return Math.max(floorDb, 20 * Math.log10(magnitude));
 }
 
