@@ -160,13 +160,18 @@ export class WaveformForgeApp {
 
     this.el.fileName.textContent = "NO SIGNAL";
     this.el.fileDuration.textContent = "";
+    this.showDropzone();
+    this.setStatus("");
+  }
+
+  /** Swaps the shell back to the empty-dropzone layout, shared by reset and error paths. */
+  private showDropzone(): void {
     this.el.loadNewButton.hidden = true;
     this.el.dropzone.classList.remove("is-error", "is-loading");
     this.el.dropzoneTitle.textContent = DROPZONE_IDLE_TITLE;
     this.el.dropzone.hidden = false;
     this.el.scopeStack.hidden = true;
     this.el.transport.hidden = true;
-    this.setStatus("");
   }
 
   private wireLoopToggle(): void {
@@ -558,12 +563,7 @@ export class WaveformForgeApp {
   private showError(message: string): void {
     this.el.statusLine.textContent = message;
     this.el.statusLine.classList.add("is-error");
+    this.showDropzone();
     this.el.dropzone.classList.add("is-error");
-    this.el.dropzone.classList.remove("is-loading");
-    this.el.dropzoneTitle.textContent = DROPZONE_IDLE_TITLE;
-    this.el.dropzone.hidden = false;
-    this.el.scopeStack.hidden = true;
-    this.el.transport.hidden = true;
-    this.el.loadNewButton.hidden = true;
   }
 }
