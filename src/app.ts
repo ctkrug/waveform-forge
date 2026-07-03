@@ -4,6 +4,7 @@ import { validateAudioFile } from "./audio/formats";
 import { SelectionPlayer } from "./audio/player";
 import { sliceChannels } from "./audio/trim-export";
 import { encodeWav } from "./audio/wav-encoder";
+import { describeAudioTech } from "./lib/format";
 import { readPref, writePref } from "./lib/prefs";
 import { computeSpectrogram } from "./lib/spectrogram";
 import { selectionToSampleRange } from "./lib/trim";
@@ -31,6 +32,7 @@ interface Elements {
   statusLine: HTMLElement;
   fileName: HTMLElement;
   fileDuration: HTMLElement;
+  fileTech: HTMLElement;
   loadNewButton: HTMLButtonElement;
   transport: HTMLElement;
   waveformCanvas: HTMLCanvasElement;
@@ -104,6 +106,7 @@ export class WaveformForgeApp {
       statusLine: requireElement("[data-status-line]"),
       fileName: requireElement("[data-file-name]"),
       fileDuration: requireElement("[data-file-duration]"),
+      fileTech: requireElement("[data-file-tech]"),
       loadNewButton: requireElement("[data-load-new]"),
       transport: requireElement("[data-transport]"),
       waveformCanvas: requireElement("[data-waveform-canvas]"),
@@ -183,6 +186,7 @@ export class WaveformForgeApp {
 
     this.el.fileName.textContent = "NO SIGNAL";
     this.el.fileDuration.textContent = "";
+    this.el.fileTech.textContent = "";
     this.showDropzone();
     this.setStatus("");
   }
@@ -565,6 +569,10 @@ export class WaveformForgeApp {
       this.el.dropzoneTitle.textContent = DROPZONE_IDLE_TITLE;
       this.el.fileName.textContent = file.name;
       this.el.fileDuration.textContent = formatDuration(buffer.duration);
+      this.el.fileTech.textContent = describeAudioTech(
+        buffer.sampleRate,
+        buffer.numberOfChannels,
+      );
       this.el.loadNewButton.hidden = false;
       this.el.dropzone.hidden = true;
       this.el.scopeStack.hidden = false;
