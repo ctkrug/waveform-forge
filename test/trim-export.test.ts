@@ -22,4 +22,13 @@ describe("sliceChannels", () => {
     sliceChannels([source], 0, 2);
     expect(Array.from(source)).toEqual([1, 2, 3]);
   });
+
+  it("returns empty arrays rather than throwing for an inverted range", () => {
+    // Callers always pass an already-normalized range from
+    // selectionToSampleRange, but TypedArray#slice degrades gracefully
+    // (empty result) rather than throwing if that invariant is ever
+    // broken, so this documents the safety net rather than a real path.
+    const sliced = sliceChannels([new Float32Array([1, 2, 3, 4])], 3, 1);
+    expect(sliced[0].length).toBe(0);
+  });
 });
