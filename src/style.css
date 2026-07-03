@@ -527,6 +527,7 @@ body {
 }
 
 .btn-primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 85%, white);
   box-shadow: var(--shadow-panel), var(--glow-accent);
 }
 
