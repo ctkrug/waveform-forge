@@ -626,6 +626,26 @@ async function loadFile(name = "clip.mp3", duration = 0.05) {
   await Promise.resolve();
 }
 
+describe("WaveformForgeApp trim handles", () => {
+  it("updates the trim readout and time readout as the trim selection changes", async () => {
+    await createApp();
+    await loadFile("clip.mp3", 2);
+    expect(elements.trimReadout.textContent).toBe(
+      `trim ${formatDuration(0)}–${formatDuration(2)}`,
+    );
+
+    // Nudge the start handle right by one keyboard step (0.05s).
+    elements.trimStart.dispatch("keydown", { key: "ArrowRight" });
+
+    expect(elements.trimReadout.textContent).toBe(
+      `trim ${formatDuration(0.05)}–${formatDuration(2)}`,
+    );
+    expect(elements.timeReadout.textContent).toBe(
+      `${formatDuration(0.05)} / ${formatDuration(2)}`,
+    );
+  });
+});
+
 describe("WaveformForgeApp playback", () => {
   it("starts playback on the transport button and flips to the pause icon", async () => {
     await createApp();
