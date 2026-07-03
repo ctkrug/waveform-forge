@@ -63,4 +63,19 @@ describe("encodeWav", () => {
     const view = new DataView(buffer);
     expect(view.getInt16(44, true)).toBe(16384);
   });
+
+  it("writes silence rather than throwing for a shorter non-first channel", () => {
+    // frameCount is driven by channels[0].length; every real caller
+    // (sliceChannels) produces equal-length channels from a shared sample
+    // range, but this locks in the fail-safe behavior if that were ever
+    // violated: an out-of-bounds read is `undefined`, and floatTo16BitPcm's
+    // clamp (`Math.max(-1, Math.min(1, undefined))` -> NaN) round-trips
+    // through DataView.setInt16 as 0, not a thrown error or garbage value.
+    const buffer = encodeWav([new Float32Array([1, 1]), new Float32Array([1])], 44100);
+    const view = new DataView(buffer);
+    expect(view.getInt16(44, true)).toBe(0x7fff); // ch0, frame0
+    expect(view.getInt16(46, true)).toBe(0x7fff); // ch1, frame0
+    expect(view.getInt16(48, true)).toBe(0x7fff); // ch0, frame1
+    expect(view.getInt16(50, true)).toBe(0); // ch1, frame1 (out of bounds -> silence)
+  });
 });
