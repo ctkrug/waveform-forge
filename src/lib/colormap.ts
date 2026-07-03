@@ -26,7 +26,10 @@ function lerp(a: number, b: number, t: number): number {
 
 /** Returns a `rgb(r, g, b)` CSS color string for a normalized intensity value. */
 export function intensityToColor(intensity: number): string {
-  const t = Math.min(1, Math.max(0, intensity));
+  // `Math.min(1, Math.max(0, NaN))` is NaN, not a clamped number — without
+  // this guard a NaN intensity (e.g. a corrupt spectrogram bin) would
+  // silently produce "rgb(NaN, NaN, NaN)" instead of a valid color.
+  const t = Number.isFinite(intensity) ? Math.min(1, Math.max(0, intensity)) : 0;
 
   let lower = STOPS[0];
   let upper = STOPS[STOPS.length - 1];
