@@ -73,6 +73,10 @@ describe("panWindow", () => {
     const result = panWindow({ start: 2, end: 6 }, 10, 1);
     expect(result.end - result.start).toBe(4);
   });
+
+  it("collapses to the zero window for a zero-duration file", () => {
+    expect(panWindow({ start: 0, end: 0 }, 0, 5)).toEqual({ start: 0, end: 0 });
+  });
 });
 
 describe("pinchZoomFactor", () => {
