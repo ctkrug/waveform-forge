@@ -534,11 +534,19 @@ export class WaveformForgeApp {
     this.playheadRafId = requestAnimationFrame(step);
   }
 
+  /**
+   * The fill reads RMS, not peak: a real VU meter's needle settles on
+   * perceived loudness rather than jumping to every instantaneous sample,
+   * so RMS reads closer to "how loud does this sound" while peak alone
+   * would flicker with every transient. Clip detection still checks peak
+   * — a single full-scale sample should light the clip LED even though it
+   * barely nudges the RMS.
+   */
   private updateLevelMeter(): void {
-    const peak = this.player.peakLevel();
-    const ratio = dbToMeterRatio(amplitudeToDb(peak));
+    const { peak, rms } = this.player.levels();
+    const ratio = dbToMeterRatio(amplitudeToDb(rms));
     this.levelMeterUi.setLevel(ratio, isClipping(peak));
-    this.el.levelMeter.setAttribute("aria-valuenow", amplitudeToDb(peak).toFixed(1));
+    this.el.levelMeter.setAttribute("aria-valuenow", amplitudeToDb(rms).toFixed(1));
   }
 
   /**
