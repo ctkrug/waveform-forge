@@ -1,9 +1,17 @@
 import { intensityToColor } from "../lib/colormap";
 import { magnitudeToDb, normalizeDb, type SpectrogramFrame } from "../lib/spectrogram";
+import { frequencyTicks, timeTicks } from "../lib/ticks";
+import { drawHorizontalTicks, drawVerticalTicks } from "./axis";
 import { fitCanvasToContainer } from "./canvas-utils";
 
 const MIN_DB = -80;
 const MAX_DB = 0;
+
+/** Extra context needed to label the spectrogram's time and frequency axes. */
+export interface SpectrogramAxisInfo {
+  sampleRate: number;
+  duration: number;
+}
 
 /**
  * Renders spectrogram frames (frequency x time magnitude data) to a
@@ -13,7 +21,7 @@ const MAX_DB = 0;
 export class SpectrogramView {
   constructor(private readonly canvas: HTMLCanvasElement) {}
 
-  render(frames: SpectrogramFrame[]): void {
+  render(frames: SpectrogramFrame[], axis?: SpectrogramAxisInfo): void {
     const ctx = fitCanvasToContainer(this.canvas);
     const width = this.canvas.clientWidth;
     const height = this.canvas.clientHeight;
@@ -40,6 +48,22 @@ export class SpectrogramView {
         const y = height - (bin + 1) * rowHeight;
         ctx.fillRect(x, y, columnWidth + 1, rowHeight + 1);
       }
+    }
+
+    if (axis) {
+      const nyquist = axis.sampleRate / 2;
+      drawHorizontalTicks(
+        ctx,
+        frequencyTicks(nyquist),
+        (hz) => height - (hz / nyquist) * height,
+        width,
+      );
+      drawVerticalTicks(
+        ctx,
+        timeTicks(0, axis.duration),
+        (seconds) => (axis.duration === 0 ? 0 : (seconds / axis.duration) * width),
+        height,
+      );
     }
   }
 }
