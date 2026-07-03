@@ -55,7 +55,7 @@ All of v1's core pipeline (intake → visualize → trim → export) is done. Th
 the "lived-with tool" pass: things you only notice once you've used it for more than
 one file.
 
-- [ ] Loop preview playback of the trim selection, toggleable from the transport, with
+- [x] Loop preview playback of the trim selection, toggleable from the transport, with
       a loop-aware playhead.
 - [ ] "Load a new file" control so a session can move to a second file without a page
       reload (today the dropzone is gone for good once one file is decoded).
