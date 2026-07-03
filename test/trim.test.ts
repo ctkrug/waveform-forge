@@ -55,4 +55,9 @@ describe("selectionToSampleRange", () => {
     const range = selectionToSampleRange({ start: 2, end: 1 }, 44100, 88200);
     expect(range).toEqual({ startSample: 44100, endSample: 88200 });
   });
+
+  it("clamps a negative start to sample 0 instead of an out-of-bounds index", () => {
+    const range = selectionToSampleRange({ start: -1, end: 1 }, 44100, 88200);
+    expect(range).toEqual({ startSample: 0, endSample: 44100 });
+  });
 });
