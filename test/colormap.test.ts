@@ -22,4 +22,8 @@ describe("intensityToColor", () => {
   it("produces a valid rgb() string for interpolated values", () => {
     expect(intensityToColor(0.2)).toMatch(/^rgb\(\d+, \d+, \d+\)$/);
   });
+
+  it("floors NaN to the background stop instead of producing rgb(NaN, NaN, NaN)", () => {
+    expect(intensityToColor(NaN)).toBe(intensityToColor(0));
+  });
 });
