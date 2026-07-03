@@ -57,7 +57,7 @@ one file.
 
 - [x] Loop preview playback of the trim selection, toggleable from the transport, with
       a loop-aware playhead.
-- [ ] "Load a new file" control so a session can move to a second file without a page
+- [x] "Load a new file" control so a session can move to a second file without a page
       reload (today the dropzone is gone for good once one file is decoded).
 - [ ] Persist the last-used FFT size and export format across sessions
       (`localStorage`), so the transport remembers your preferences.
