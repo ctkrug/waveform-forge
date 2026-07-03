@@ -16,3 +16,15 @@ function formatChannelCount(channels: number): string {
 export function describeAudioTech(sampleRateHz: number, channels: number): string {
   return `${formatSampleRate(sampleRateHz)} · ${formatChannelCount(channels)}`;
 }
+
+/**
+ * Renders seconds as `MM:SS.mmm`. Rounds to whole milliseconds before
+ * splitting into minutes/seconds so a value like 59.9998s renders as
+ * "01:00.000" instead of the seconds field rolling over to "60.000".
+ */
+export function formatDuration(seconds: number): string {
+  const totalMs = Math.round(Math.max(0, seconds) * 1000);
+  const minutes = Math.floor(totalMs / 60000);
+  const secs = (totalMs - minutes * 60000) / 1000;
+  return `${minutes.toString().padStart(2, "0")}:${secs.toFixed(3).padStart(6, "0")}`;
+}

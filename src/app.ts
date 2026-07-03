@@ -4,7 +4,7 @@ import { validateAudioFile } from "./audio/formats";
 import { SelectionPlayer } from "./audio/player";
 import { sliceChannels } from "./audio/trim-export";
 import { encodeWav } from "./audio/wav-encoder";
-import { describeAudioTech } from "./lib/format";
+import { describeAudioTech, formatDuration } from "./lib/format";
 import { amplitudeToDb, dbToMeterRatio, isClipping } from "./lib/meter";
 import { readPref, writePref } from "./lib/prefs";
 import { computeSpectrogram } from "./lib/spectrogram";
@@ -72,12 +72,6 @@ function requireElement<T extends Element>(selector: string): T {
     throw new Error(`WaveformForgeApp: missing required element "${selector}"`);
   }
   return el;
-}
-
-function formatDuration(seconds: number): string {
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds - minutes * 60;
-  return `${minutes.toString().padStart(2, "0")}:${secs.toFixed(3).padStart(6, "0")}`;
 }
 
 /** Top-level controller: wires the DOM shell to the audio pipeline. */
