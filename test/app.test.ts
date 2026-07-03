@@ -243,8 +243,8 @@ const SELECTORS = [
   ["downloadLink", "[data-download-link]", FakeAnchorElement],
 ] as const;
 
-/** Builds a fresh fake DOM registry + `document`/global stubs, then constructs the app. */
-async function createApp() {
+/** Builds a fresh fake DOM registry + `document`/global stubs (no app construction). */
+function setupFakeDom(): void {
   elements = {};
   const bySelector = new Map<string, FakeElement>();
   for (const [key, selector, Ctor] of SELECTORS) {
@@ -308,7 +308,11 @@ async function createApp() {
 
   fakeAudioContext = new FakeAudioContext();
   getAudioContextMock.mockReturnValue(fakeAudioContext);
+}
 
+/** Builds a fresh fake DOM, then constructs the app against it. */
+async function createApp() {
+  setupFakeDom();
   vi.resetModules();
   const { WaveformForgeApp } = await import("../src/app");
   return new WaveformForgeApp();
@@ -902,5 +906,19 @@ describe("WaveformForgeApp zoom/pan", () => {
       elements.waveformWrap.dispatch("pointerdown", { clientX: 0 }),
     ).not.toThrow();
     expect(elements.trimStart.style.left).toBeUndefined();
+  });
+});
+
+describe("main entrypoint", () => {
+  it("bootstraps a WaveformForgeApp against the page's DOM on import", async () => {
+    setupFakeDom();
+    vi.resetModules();
+
+    await expect(import("../src/main")).resolves.toBeDefined();
+
+    // main.ts's `new WaveformForgeApp()` ran the real constructor, which
+    // wires the transport button — confirm it's live rather than just
+    // asserting the import didn't throw.
+    expect(() => elements.playToggle.dispatch("click")).not.toThrow();
   });
 });
