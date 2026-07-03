@@ -550,6 +550,7 @@ body {
 
 .btn-ghost:hover:not(:disabled) {
   color: var(--accent);
+  background: var(--surface-2);
   border-color: transparent;
 }
 
