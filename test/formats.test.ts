@@ -34,6 +34,16 @@ describe("validateAudioFile", () => {
     expect(result.reason).toContain("limit");
   });
 
+  it("accepts a file exactly at the size limit", () => {
+    expect(
+      validateAudioFile({
+        name: "exact.wav",
+        type: "audio/wav",
+        size: MAX_FILE_SIZE_BYTES,
+      }).valid,
+    ).toBe(true);
+  });
+
   it("rejects a non-audio file", () => {
     const result = validateAudioFile({
       name: "notes.txt",
