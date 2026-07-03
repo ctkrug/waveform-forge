@@ -43,6 +43,7 @@ without a full page reload.
 | `src/lib/math.ts`            | `clamp`.                                                                                                                                             |
 | `src/lib/playback.ts`        | `resolvePlaybackTime` — wraps elapsed playback time into the selection range when looping instead of clamping it to the selection end.               |
 | `src/lib/prefs.ts`           | `readPref`/`writePref` — try/caught `localStorage` wrapper for small persisted UI preferences (FFT size, export format).                              |
+| `src/lib/format.ts`          | `describeAudioTech` — formats sample rate/channel count into the topbar's technical readout, e.g. "44.1kHz · stereo".                                 |
 | `src/audio/formats.ts`       | Intake file validation (size + type), independent of the DOM `File` type.                                                                            |
 | `src/audio/decode.ts`        | `decodeAudioFile` — native decode with ffmpeg.wasm fallback; shared `AudioContext`.                                                                  |
 | `src/audio/ffmpeg-client.ts` | Lazy-loaded ffmpeg.wasm singleton; `demuxToWav` (decode fallback) and `transcode` (export), both wired for the ~30MB core to load only on first use. |

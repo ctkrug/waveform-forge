@@ -63,7 +63,7 @@ one file.
       (`localStorage`), so the transport remembers your preferences.
 - [ ] A live peak-level meter during preview playback, styled as an analog VU meter —
       reinforces the studio-hardware design direction and gives instant clip feedback.
-- [ ] Technical file readout (sample rate / channel count) in the topbar file-meta
+- [x] Technical file readout (sample rate / channel count) in the topbar file-meta
       strip, alongside the existing name/duration. (Bit depth is dropped from this
       story's original scope: `decodeAudioData` always yields 32-bit float PCM, so the
       source file's original bit depth isn't observable from the decoded `AudioBuffer`
