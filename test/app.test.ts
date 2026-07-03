@@ -811,6 +811,24 @@ describe("WaveformForgeApp export", () => {
     expect((elements.exportButton as FakeButtonElement).disabled).toBe(false);
   });
 
+  it("reports transcode progress on the export progress bar", async () => {
+    await createApp();
+    await loadFile("clip.mp3");
+    transcodeMock.mockImplementationOnce(
+      (_wav: ArrayBuffer, _format: string, onProgress: (ratio: number) => void) => {
+        onProgress(0.42);
+        return Promise.resolve(new Blob());
+      },
+    );
+
+    elements.exportButton.dispatch("click");
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(elements.exportProgressBar.style.width).toBe("42%");
+  });
+
   it("re-enables the export button and shows an error on transcode failure", async () => {
     await createApp();
     await loadFile();
