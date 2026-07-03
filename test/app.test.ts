@@ -950,6 +950,52 @@ describe("WaveformForgeApp zoom/pan", () => {
     expect(parseFloat(elements.trimStart.style.left)).toBeLessThan(startBeforePan);
   });
 
+  it("zooms using a two-finger pinch distance", async () => {
+    await createApp();
+    await loadFile("clip.mp3", 2);
+
+    elements.waveformWrap.dispatch("pointerdown", { pointerId: 1, clientX: 400 });
+    elements.waveformWrap.dispatch("pointerdown", { pointerId: 2, clientX: 600 });
+    // Fingers spread from 200px apart to 400px apart -> zoom in (factor 0.5).
+    elements.waveformWrap.dispatch("pointermove", { pointerId: 1, clientX: 300 });
+    elements.waveformWrap.dispatch("pointermove", { pointerId: 2, clientX: 700 });
+
+    expect(elements.trimStart.style.left).toBe("-50%");
+    expect(elements.trimEnd.style.left).toBe("150%");
+  });
+
+  it("keeps tracking its original two pointer IDs when a third finger touches down", async () => {
+    await createApp();
+    await loadFile("clip.mp3", 2);
+    elements.waveformWrap.dispatch("pointerdown", { pointerId: 1, clientX: 400 });
+    elements.waveformWrap.dispatch("pointerdown", { pointerId: 2, clientX: 600 });
+
+    // A third finger landing mid-gesture must not become part of the pinch.
+    elements.waveformWrap.dispatch("pointerdown", { pointerId: 3, clientX: 0 });
+    elements.waveformWrap.dispatch("pointermove", { pointerId: 3, clientX: 999 });
+    expect(elements.trimStart.style.left).toBe("0%");
+
+    // The original pair still drives the zoom once it moves.
+    elements.waveformWrap.dispatch("pointermove", { pointerId: 1, clientX: 300 });
+    elements.waveformWrap.dispatch("pointermove", { pointerId: 2, clientX: 700 });
+    expect(elements.trimStart.style.left).toBe("-50%");
+  });
+
+  it("ends the pinch outright when one of its two pointers lifts", async () => {
+    await createApp();
+    await loadFile("clip.mp3", 2);
+    elements.waveformWrap.dispatch("pointerdown", { pointerId: 1, clientX: 400 });
+    elements.waveformWrap.dispatch("pointerdown", { pointerId: 2, clientX: 600 });
+
+    elements.waveformWrap.dispatch("pointerup", { pointerId: 1 });
+    // Only pointer 2 remains; further movement from it must not re-pair
+    // into a new single-pointer pinch or silently resume the old one.
+    elements.waveformWrap.dispatch("pointermove", { pointerId: 2, clientX: 999 });
+
+    expect(elements.trimStart.style.left).toBe("0%");
+    expect(elements.trimEnd.style.left).toBe("100%");
+  });
+
   it("skips pan handling when the pointerdown originates on a trim handle", async () => {
     await createApp();
     await loadFile("clip.mp3", 2);
