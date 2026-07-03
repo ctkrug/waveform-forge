@@ -126,4 +126,32 @@ describe("TrimHandles pointer dragging", () => {
     expect(selection.start).toBeLessThan(selection.end);
     expect(selection.end).toBe(10);
   });
+
+  it("stops an end-handle drag short of the start handle", () => {
+    const { handles, el } = createHandles();
+    handles.setDuration(10);
+
+    el.endHandle.dispatch("pointerdown", { clientX: 1000 });
+    // Drag all the way to the left edge (time=0), attempting to cross start.
+    el.endHandle.dispatch("pointermove", { clientX: 0 });
+
+    const selection = handles.getSelection();
+    expect(selection.start).toBeLessThan(selection.end);
+    expect(selection.start).toBe(0);
+  });
+
+  it("stops tracking pointermove once the drag ends", () => {
+    const { handles, el } = createHandles();
+    handles.setDuration(10);
+
+    el.startHandle.dispatch("pointerdown", { clientX: 0 });
+    el.startHandle.dispatch("pointermove", { clientX: 200 });
+    el.startHandle.dispatch("pointerup");
+    const afterRelease = handles.getSelection();
+
+    // A pointermove after release should be a no-op: the listener was removed.
+    el.startHandle.dispatch("pointermove", { clientX: 800 });
+
+    expect(handles.getSelection()).toEqual(afterRelease);
+  });
 });
