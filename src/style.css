@@ -490,6 +490,31 @@ body {
   color: var(--text-muted);
 }
 
+.btn-ghost {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 var(--space-1);
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: transparent;
+}
+
+.btn-ghost:active:not(:disabled) {
+  box-shadow: none;
+  transform: translateY(1px);
+}
+
+.btn-ghost[hidden] {
+  display: none;
+}
+
 .select {
   appearance: none;
   min-height: 44px;
