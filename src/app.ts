@@ -86,6 +86,14 @@ export class WaveformForgeApp {
   private spectrogramFrames: ReturnType<typeof computeSpectrogram> | null = null;
   private audioBuffer: AudioBuffer | null = null;
   private playheadRafId: number | null = null;
+  /**
+   * Bumped on every `handleFile` call and captured at its start; if a newer
+   * load has started by the time an older one's decode settles, the older
+   * one's `.then`/`.catch` tail is a no-op instead of clobbering the UI
+   * with a stale result (or a stale error) from a file the user has since
+   * replaced by loading another one before the first finished decoding.
+   */
+  private fileLoadGeneration = 0;
   private viewWindow: ViewWindow = { start: 0, end: 0 };
   private spectrogramFftSize = DEFAULT_SPECTROGRAM_FFT_SIZE;
   private loopEnabled = false;
@@ -208,6 +216,9 @@ export class WaveformForgeApp {
 
   /** Returns to the empty-dropzone state so a second file can be loaded without a page reload. */
   private resetSession(): void {
+    // Invalidate any decode still in flight so it can't repopulate the UI
+    // after the user has already asked to go back to the empty state.
+    this.fileLoadGeneration++;
     this.player.stop();
     this.onPlaybackEnded();
     this.audioBuffer = null;
@@ -596,6 +607,7 @@ export class WaveformForgeApp {
   }
 
   private async handleFile(file: File): Promise<void> {
+    const generation = ++this.fileLoadGeneration;
     this.el.dropzone.classList.remove("is-error");
     const validation = validateAudioFile(file);
     if (!validation.valid) {
@@ -610,6 +622,10 @@ export class WaveformForgeApp {
     try {
       this.player.stop();
       const { buffer, usedFallback } = await decodeAudioFile(file);
+      // A newer handleFile() call has since started (e.g. the user dropped
+      // a second file before this one finished decoding) — that load owns
+      // the UI now, so abandon this one rather than clobbering it.
+      if (generation !== this.fileLoadGeneration) return;
       this.audioBuffer = buffer;
       this.monoSamples = downmixToMono(
         Array.from({ length: buffer.numberOfChannels }, (_, i) =>
@@ -646,6 +662,7 @@ export class WaveformForgeApp {
       );
       this.render();
     } catch (error) {
+      if (generation !== this.fileLoadGeneration) return;
       this.showError(
         error instanceof Error
           ? `Couldn't decode "${file.name}": ${error.message}`
