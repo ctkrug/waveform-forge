@@ -41,6 +41,19 @@ describe("zoomWindow", () => {
   it("collapses to a zero window for a zero-duration file", () => {
     expect(zoomWindow({ start: 0, end: 0 }, 0, 0.5, 0.5)).toEqual({ start: 0, end: 0 });
   });
+
+  it("stays within a file shorter than the minimum zoom span instead of overflowing it", () => {
+    // clampSelection-style bounds collide here: `clamp(newSpan, MIN_VIEW_SECONDS,
+    // duration)` is asked for a span between 0.05 and 0.02 — an inverted
+    // range. `Math.min(Math.max(x, min), max)` still resolves it sanely
+    // (the max wins), but it's worth locking in given how easy this is to
+    // get backwards.
+    const duration = 0.02;
+    const result = zoomWindow({ start: 0, end: duration }, duration, 0.5, 0.5);
+    expect(result.start).toBeGreaterThanOrEqual(0);
+    expect(result.end).toBeLessThanOrEqual(duration);
+    expect(result.end - result.start).toBeCloseTo(duration, 9);
+  });
 });
 
 describe("panWindow", () => {
