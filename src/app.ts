@@ -696,6 +696,13 @@ export class WaveformForgeApp {
       this.render();
     } catch (error) {
       if (generation !== this.sessionGeneration) return;
+      // A failed decode returns the *visible* UI to the dropzone, but
+      // without this a still-loaded previous file's buffer would linger on
+      // the controller — e.g. spacebar (guarded only by `!this.audioBuffer`)
+      // would silently resume playing it with the transport hidden.
+      this.audioBuffer = null;
+      this.monoSamples = null;
+      this.spectrogramFrames = null;
       this.showError(
         error instanceof Error
           ? `Couldn't decode "${file.name}": ${error.message}`
