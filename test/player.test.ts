@@ -111,7 +111,8 @@ describe("SelectionPlayer", () => {
     const onEnded = vi.fn();
     player.subscribe(onEnded);
     await player.play(fakeBuffer, { start: 0, end: 1 });
-    const firstSource = context.createBufferSource.mock.results[0].value as FakeSourceNode;
+    const firstSource = context.createBufferSource.mock.results[0]
+      .value as FakeSourceNode;
     await player.play(fakeBuffer, { start: 0, end: 1 });
 
     firstSource.onended?.();

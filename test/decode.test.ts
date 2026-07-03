@@ -13,7 +13,9 @@ async function freshModule() {
 }
 
 const fakeArrayBuffer = new ArrayBuffer(8);
-const fakeFile = { arrayBuffer: vi.fn().mockResolvedValue(fakeArrayBuffer) } as unknown as File;
+const fakeFile = {
+  arrayBuffer: vi.fn().mockResolvedValue(fakeArrayBuffer),
+} as unknown as File;
 const decodedBuffer = {} as AudioBuffer;
 
 let decodeAudioDataMock: ReturnType<typeof vi.fn>;
