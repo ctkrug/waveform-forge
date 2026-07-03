@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  clampEdgeAgainstOther,
   clampSelection,
   MIN_SELECTION_SECONDS,
   selectionToSampleRange,
@@ -37,6 +38,22 @@ describe("clampSelection", () => {
 
   it("collapses to a zero-length selection for a zero-duration file", () => {
     expect(clampSelection(1, 4, 0)).toEqual({ start: 0, end: 0 });
+  });
+});
+
+describe("clampEdgeAgainstOther", () => {
+  it("passes a start proposal through unchanged when it stays left of end", () => {
+    expect(clampEdgeAgainstOther("start", 1, { start: 0, end: 4 })).toBe(1);
+  });
+
+  it("stops a start proposal from reaching or crossing end", () => {
+    const result = clampEdgeAgainstOther("start", 10, { start: 0, end: 4 });
+    expect(result).toBeCloseTo(4 - MIN_SELECTION_SECONDS, 9);
+  });
+
+  it("stops an end proposal from reaching or crossing start", () => {
+    const result = clampEdgeAgainstOther("end", -5, { start: 3, end: 8 });
+    expect(result).toBeCloseTo(3 + MIN_SELECTION_SECONDS, 9);
   });
 });
 
