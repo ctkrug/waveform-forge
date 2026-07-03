@@ -36,6 +36,7 @@ re-renders both canvases).
 | `src/lib/colormap.ts`        | Normalized intensity -> RGB along the studio-scope palette (bg -> green -> amber).                                                                   |
 | `src/lib/trim.ts`            | `clampSelection`/`selectionToSampleRange` — the sample-accurate trim-bounds math.                                                                    |
 | `src/lib/zoom.ts`            | `zoomWindow`/`panWindow` — pivot-preserving zoom and clamped pan over a waveform view window.                                                        |
+| `src/lib/ticks.ts`           | `timeTicks`/`frequencyTicks` — "nice" (1/2/5x10^n) axis tick generation for gridlines and labels.                                                    |
 | `src/lib/math.ts`            | `clamp`.                                                                                                                                             |
 | `src/audio/formats.ts`       | Intake file validation (size + type), independent of the DOM `File` type.                                                                            |
 | `src/audio/decode.ts`        | `decodeAudioFile` — native decode with ffmpeg.wasm fallback; shared `AudioContext`.                                                                  |
@@ -44,8 +45,9 @@ re-renders both canvases).
 | `src/audio/trim-export.ts`   | `sliceChannels` — cuts PCM channels to the trim sample range.                                                                                        |
 | `src/audio/player.ts`        | `SelectionPlayer` — plays a trim selection via `AudioBufferSourceNode`, exposes a clock-derived `currentTime()` for the playhead.                    |
 | `src/ui/canvas-utils.ts`     | `fitCanvasToContainer` — devicePixelRatio-correct canvas backing-store sizing.                                                                       |
-| `src/ui/waveform-view.ts`    | Renders the min/max envelope as a glowing phosphor trace.                                                                                            |
-| `src/ui/spectrogram-view.ts` | Renders spectrogram frames as a colormapped heatmap.                                                                                                 |
+| `src/ui/axis.ts`             | `drawVerticalTicks`/`drawHorizontalTicks` — shared gridline + halo-backed label rendering for canvas axes.                                           |
+| `src/ui/waveform-view.ts`    | Renders the min/max envelope as a glowing phosphor trace, with a time-axis overlay against the current view window.                                  |
+| `src/ui/spectrogram-view.ts` | Renders spectrogram frames as a colormapped heatmap, with frequency (0..Nyquist) and time (0..duration) axis overlays.                               |
 | `src/ui/trim-handles.ts`     | Draggable (Pointer Events) + keyboard-nudgeable in/out trim handles, DOM-overlay based.                                                              |
 | `src/app.ts`                 | `WaveformForgeApp` — the top-level controller wiring intake, rendering, trim, playback, and export together.                                         |
 | `src/main.ts`                | Entry point; instantiates `WaveformForgeApp`.                                                                                                        |
@@ -55,10 +57,16 @@ re-renders both canvases).
 - The waveform/spectrogram canvases are sized via `fitCanvasToContainer`, which reads
   `canvas.clientWidth/Height`, scales the backing store by `devicePixelRatio`, and
   pre-scales the 2D context so draw calls work in CSS-pixel units.
-- The spectrogram's FFT is computed **once per decoded file** and cached
-  (`spectrogramFrames`); a resize only re-renders (cheap canvas redraw), it never
-  recomputes the FFT. The waveform envelope, being cheap to recompute, is redone on
-  every resize/render call directly from the cached mono samples.
+- The spectrogram's FFT is computed **once per decoded file** (and recomputed once if
+  the user changes the FFT-size select) and cached (`spectrogramFrames`); a resize only
+  re-renders (cheap canvas redraw), it never recomputes the FFT. The waveform envelope,
+  being cheap to recompute, is redone on every resize/render call directly from the
+  cached mono samples.
+- Both canvases draw axis gridlines/labels (`src/ui/axis.ts`, tick values from
+  `src/lib/ticks.ts`) directly into the same 2D context as the trace/heatmap, after it,
+  so labels sit on top. Labels get a dark stroked halo (`drawLabel` in `axis.ts`) so
+  they stay legible regardless of what's drawn underneath — the spectrogram's bottom
+  row in particular can be bright with low-frequency energy.
 - The playhead and trim handles are **DOM overlays**, not canvas-drawn — they need to
   move every animation frame during playback/drag without forcing a full waveform
   redraw, so they're positioned with `style.left` percentages against the same
@@ -71,6 +79,24 @@ re-renders both canvases).
   on every pan would be expensive), so its playhead is positioned against total
   duration while the waveform's playhead is positioned against the current view
   window — the two intentionally use different ratios.
+
+## Layout
+
+`.app` is a column flexbox given a **definite** height (`100vh`, upgraded to `100dvh`
+where supported) rather than `min-height`. This matters: `.scope-panel`'s children
+(`.waveform-wrap`/`.spectrogram-wrap`, `flex: 3`/`flex: 2`) only distribute space
+proportionally when every ancestor up to `.app` has a definite height — a `min-height`
+anywhere in that chain lets the browser fall back to sizing from content instead of the
+viewport, which previously let the page overflow well past 100vh and pushed the
+transport strip off-screen. Every panel in the chain (`.scope-panel`, `.scope-stack`)
+uses `min-height: 0` (the standard flex-child override) rather than a `vh` floor.
+
+## Landing page
+
+`landing/index.html` + `landing/style.css` are a small static marketing page (no build
+step — plain HTML/CSS, own copy of the `docs/DESIGN.md` tokens) that links to the app at
+`../index.html`. It lives in `landing/`, not `site/`: `site/` is this project's
+gitignored build-output directory name (see `.gitignore`), not a source directory.
 
 ## Testing
 
