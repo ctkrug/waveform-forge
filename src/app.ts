@@ -5,11 +5,13 @@ import { SelectionPlayer } from "./audio/player";
 import { sliceChannels } from "./audio/trim-export";
 import { encodeWav } from "./audio/wav-encoder";
 import { describeAudioTech } from "./lib/format";
+import { amplitudeToDb, dbToMeterRatio, isClipping } from "./lib/meter";
 import { readPref, writePref } from "./lib/prefs";
 import { computeSpectrogram } from "./lib/spectrogram";
 import { selectionToSampleRange } from "./lib/trim";
 import { computeWaveformEnvelope, downmixToMono } from "./lib/waveform";
 import { panWindow, pinchZoomFactor, type ViewWindow, zoomWindow } from "./lib/zoom";
+import { LevelMeter } from "./ui/level-meter";
 import { SpectrogramView } from "./ui/spectrogram-view";
 import { TrimHandles } from "./ui/trim-handles";
 import { WaveformView } from "./ui/waveform-view";
@@ -47,6 +49,9 @@ interface Elements {
   playToggle: HTMLButtonElement;
   playIcon: HTMLElement;
   loopToggle: HTMLButtonElement;
+  levelMeter: HTMLElement;
+  levelMeterFill: HTMLElement;
+  levelMeterClip: HTMLElement;
   timeReadout: HTMLElement;
   fftSizeSelect: HTMLSelectElement;
   formatSelect: HTMLSelectElement;
@@ -82,6 +87,7 @@ export class WaveformForgeApp {
   private readonly spectrogramView: SpectrogramView;
   private readonly trimHandles: TrimHandles;
   private readonly player: SelectionPlayer;
+  private readonly levelMeterUi: LevelMeter;
   private monoSamples: Float32Array | null = null;
   private spectrogramFrames: ReturnType<typeof computeSpectrogram> | null = null;
   private audioBuffer: AudioBuffer | null = null;
@@ -121,6 +127,9 @@ export class WaveformForgeApp {
       playToggle: requireElement("[data-play-toggle]"),
       playIcon: requireElement("[data-play-icon]"),
       loopToggle: requireElement("[data-loop-toggle]"),
+      levelMeter: requireElement("[data-level-meter]"),
+      levelMeterFill: requireElement("[data-level-meter-fill]"),
+      levelMeterClip: requireElement("[data-level-meter-clip]"),
       timeReadout: requireElement("[data-time-readout]"),
       fftSizeSelect: requireElement("[data-fft-size-select]"),
       formatSelect: requireElement("[data-format-select]"),
@@ -141,6 +150,10 @@ export class WaveformForgeApp {
     this.trimHandles.subscribe((selection) => {
       this.el.trimReadout.textContent = `trim ${formatDuration(selection.start)}–${formatDuration(selection.end)}`;
       this.updateTimeReadout(selection.start);
+    });
+    this.levelMeterUi = new LevelMeter({
+      fill: this.el.levelMeterFill,
+      clipLed: this.el.levelMeterClip,
     });
     this.player = new SelectionPlayer(getAudioContext());
     this.player.subscribe(() => this.onPlaybackEnded());
@@ -438,9 +451,17 @@ export class WaveformForgeApp {
       }
       this.positionPlayhead(time);
       this.updateTimeReadout(time);
+      this.updateLevelMeter();
       this.playheadRafId = requestAnimationFrame(step);
     };
     this.playheadRafId = requestAnimationFrame(step);
+  }
+
+  private updateLevelMeter(): void {
+    const peak = this.player.peakLevel();
+    const ratio = dbToMeterRatio(amplitudeToDb(peak));
+    this.levelMeterUi.setLevel(ratio, isClipping(peak));
+    this.el.levelMeter.setAttribute("aria-valuenow", amplitudeToDb(peak).toFixed(1));
   }
 
   /**
@@ -468,6 +489,8 @@ export class WaveformForgeApp {
     const start = this.trimHandles.getSelection().start;
     this.positionPlayhead(start);
     this.updateTimeReadout(start);
+    this.levelMeterUi.reset();
+    this.el.levelMeter.setAttribute("aria-valuenow", "-60");
   }
 
   private updateTimeReadout(currentTime: number): void {
