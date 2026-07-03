@@ -68,4 +68,9 @@ describe("frequencyTicks", () => {
     const ticks = frequencyTicks(500, 5);
     expect(ticks.every((t) => !t.label.endsWith("k"))).toBe(true);
   });
+
+  it("keeps one decimal place for a non-whole kilohertz tick", () => {
+    const ticks = frequencyTicks(3000, 6);
+    expect(ticks).toContainEqual({ value: 1500, label: "1.5k" });
+  });
 });
