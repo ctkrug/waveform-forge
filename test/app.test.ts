@@ -441,6 +441,68 @@ describe("WaveformForgeApp file intake", () => {
 
     expect(input.value).toBe("");
   });
+
+  it("toggles the dragover class and loads a file dropped on the dropzone", async () => {
+    await createApp();
+    decodeAudioFileMock.mockResolvedValueOnce({
+      buffer: fakeAudioBuffer(),
+      usedFallback: false,
+    });
+
+    elements.dropzone.dispatch("dragover");
+    expect(elements.dropzone.classList.contains("is-dragover")).toBe(true);
+
+    elements.dropzone.dispatch("dragleave");
+    expect(elements.dropzone.classList.contains("is-dragover")).toBe(false);
+
+    elements.dropzone.dispatch("dragover");
+    elements.dropzone.dispatch("drop", {
+      dataTransfer: { files: [fakeFile({ name: "dropped.wav" })] },
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(elements.dropzone.classList.contains("is-dragover")).toBe(false);
+    expect(elements.fileName.textContent).toBe("dropped.wav");
+  });
+
+  it("ignores a drop event carrying no files", async () => {
+    await createApp();
+
+    elements.dropzone.dispatch("drop", { dataTransfer: { files: [] } });
+    await Promise.resolve();
+
+    expect(decodeAudioFileMock).not.toHaveBeenCalled();
+  });
+
+  it("surfaces the ffmpeg-fallback status message mid-decode", async () => {
+    await createApp();
+    // Mirrors decode.ts's real contract: `onFallback` fires synchronously,
+    // before the (here, deliberately never-settling) demux/decode await.
+    decodeAudioFileMock.mockImplementationOnce((_file: File, fallback: () => void) => {
+      fallback();
+      return new Promise(() => {});
+    });
+
+    (elements.fileInput as FakeInputElement).files = [fakeFile()];
+    elements.fileInput.dispatch("change");
+
+    expect(elements.statusLine.textContent).toMatch(/falling back to ffmpeg\.wasm/);
+  });
+
+  it("reports a generic error message when decode rejects with a non-Error value", async () => {
+    await createApp();
+    decodeAudioFileMock.mockRejectedValueOnce("disk full");
+
+    (elements.fileInput as FakeInputElement).files = [fakeFile({ name: "bad.mp3" })];
+    elements.fileInput.dispatch("change");
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(elements.statusLine.textContent).toBe('Couldn\'t decode "bad.mp3".');
+  });
 });
 
 describe("WaveformForgeApp session reset", () => {
