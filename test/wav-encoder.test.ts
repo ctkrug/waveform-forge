@@ -50,6 +50,13 @@ describe("encodeWav", () => {
     expect(buffer.byteLength).toBe(44);
   });
 
+  it("falls back to a valid mono header for a channels array with no channels at all", () => {
+    const buffer = encodeWav([], 44100);
+    const view = new DataView(buffer);
+    expect(buffer.byteLength).toBe(44);
+    expect(view.getUint16(22, true)).toBe(1); // channelCount floors to 1, not 0
+  });
+
   it("rounds to the nearest 16-bit value instead of truncating toward zero", () => {
     // 0.5 * 32767 = 16383.5 — truncation would yield 16383, rounding 16384.
     const buffer = encodeWav([new Float32Array([0.5])], 44100);
