@@ -1044,6 +1044,46 @@ describe("WaveformForgeApp zoom/pan", () => {
     expect(elements.trimEnd.style.left).toBe("100%");
   });
 
+  it("zooms in/out and resets the view window from the keyboard", async () => {
+    await createApp();
+    await loadFile("clip.mp3", 2);
+
+    elements.waveformWrap.dispatch("keydown", { key: "+" });
+    expect(parseFloat(elements.trimStart.style.left)).toBeLessThan(0);
+    expect(parseFloat(elements.trimEnd.style.left)).toBeGreaterThan(100);
+    const startZoomedIn = parseFloat(elements.trimStart.style.left);
+
+    elements.waveformWrap.dispatch("keydown", { key: "-" });
+    expect(parseFloat(elements.trimStart.style.left)).toBeGreaterThan(startZoomedIn);
+
+    elements.waveformWrap.dispatch("keydown", { key: "0" });
+    expect(elements.trimStart.style.left).toBe("0%");
+    expect(elements.trimEnd.style.left).toBe("100%");
+  });
+
+  it("also accepts the shifted +/- key variants (= and _)", async () => {
+    await createApp();
+    await loadFile("clip.mp3", 2);
+
+    elements.waveformWrap.dispatch("keydown", { key: "=" });
+    expect(parseFloat(elements.trimStart.style.left)).toBeLessThan(0);
+    const startZoomedIn = parseFloat(elements.trimStart.style.left);
+
+    elements.waveformWrap.dispatch("keydown", { key: "_" });
+    expect(parseFloat(elements.trimStart.style.left)).toBeGreaterThan(startZoomedIn);
+  });
+
+  it("ignores unrelated keys and does nothing before a file is loaded", async () => {
+    await createApp();
+    await loadFile("clip.mp3", 2);
+
+    elements.waveformWrap.dispatch("keydown", { key: "Tab" });
+    expect(elements.trimStart.style.left).toBe("0%");
+
+    elements.loadNewButton.dispatch("click");
+    expect(() => elements.waveformWrap.dispatch("keydown", { key: "+" })).not.toThrow();
+  });
+
   it("skips pan handling when the pointerdown originates on a trim handle", async () => {
     await createApp();
     await loadFile("clip.mp3", 2);
