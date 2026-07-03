@@ -40,6 +40,11 @@ describe("timeTicks", () => {
     const ticks = timeTicks(0, 9, 1);
     expect(ticks).toEqual([{ value: 0, label: "0:00" }]);
   });
+
+  it("falls back to a step of 1 instead of looping forever for a zero targetCount", () => {
+    const ticks = timeTicks(0, 3, 0);
+    expect(ticks.map((t) => t.value)).toEqual([0, 1, 2, 3]);
+  });
 });
 
 describe("frequencyTicks", () => {
