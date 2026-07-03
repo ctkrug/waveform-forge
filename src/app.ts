@@ -23,6 +23,7 @@ interface Elements {
   statusLine: HTMLElement;
   fileName: HTMLElement;
   fileDuration: HTMLElement;
+  loadNewButton: HTMLButtonElement;
   transport: HTMLElement;
   waveformCanvas: HTMLCanvasElement;
   spectrogramCanvas: HTMLCanvasElement;
@@ -95,6 +96,7 @@ export class WaveformForgeApp {
       statusLine: requireElement("[data-status-line]"),
       fileName: requireElement("[data-file-name]"),
       fileDuration: requireElement("[data-file-duration]"),
+      loadNewButton: requireElement("[data-load-new]"),
       transport: requireElement("[data-transport]"),
       waveformCanvas: requireElement("[data-waveform-canvas]"),
       spectrogramCanvas: requireElement("[data-spectrogram-canvas]"),
@@ -136,9 +138,35 @@ export class WaveformForgeApp {
     this.wireResize();
     this.wireTransport();
     this.wireLoopToggle();
+    this.wireLoadNew();
     this.wireExport();
     this.wireZoomPan();
     this.wireFftSize();
+  }
+
+  private wireLoadNew(): void {
+    this.el.loadNewButton.addEventListener("click", () => this.resetSession());
+  }
+
+  /** Returns to the empty-dropzone state so a second file can be loaded without a page reload. */
+  private resetSession(): void {
+    this.player.stop();
+    this.onPlaybackEnded();
+    this.audioBuffer = null;
+    this.monoSamples = null;
+    this.spectrogramFrames = null;
+    this.viewWindow = { start: 0, end: 0 };
+    this.trimHandles.setDuration(0);
+
+    this.el.fileName.textContent = "NO SIGNAL";
+    this.el.fileDuration.textContent = "";
+    this.el.loadNewButton.hidden = true;
+    this.el.dropzone.classList.remove("is-error", "is-loading");
+    this.el.dropzoneTitle.textContent = DROPZONE_IDLE_TITLE;
+    this.el.dropzone.hidden = false;
+    this.el.scopeStack.hidden = true;
+    this.el.transport.hidden = true;
+    this.setStatus("");
   }
 
   private wireLoopToggle(): void {
@@ -505,6 +533,7 @@ export class WaveformForgeApp {
       this.el.dropzoneTitle.textContent = DROPZONE_IDLE_TITLE;
       this.el.fileName.textContent = file.name;
       this.el.fileDuration.textContent = formatDuration(buffer.duration);
+      this.el.loadNewButton.hidden = false;
       this.el.dropzone.hidden = true;
       this.el.scopeStack.hidden = false;
       this.el.transport.hidden = false;
@@ -535,5 +564,6 @@ export class WaveformForgeApp {
     this.el.dropzone.hidden = false;
     this.el.scopeStack.hidden = true;
     this.el.transport.hidden = true;
+    this.el.loadNewButton.hidden = true;
   }
 }
