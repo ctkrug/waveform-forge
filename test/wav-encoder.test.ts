@@ -49,4 +49,11 @@ describe("encodeWav", () => {
     const buffer = encodeWav([new Float32Array(0)], 44100);
     expect(buffer.byteLength).toBe(44);
   });
+
+  it("rounds to the nearest 16-bit value instead of truncating toward zero", () => {
+    // 0.5 * 32767 = 16383.5 — truncation would yield 16383, rounding 16384.
+    const buffer = encodeWav([new Float32Array([0.5])], 44100);
+    const view = new DataView(buffer);
+    expect(view.getInt16(44, true)).toBe(16384);
+  });
 });

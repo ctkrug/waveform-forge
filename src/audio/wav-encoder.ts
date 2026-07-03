@@ -15,8 +15,11 @@ function writeString(view: DataView, offset: number, value: string): void {
 
 function floatTo16BitPcm(view: DataView, offset: number, sample: number): void {
   const clamped = Math.max(-1, Math.min(1, sample));
-  const value = clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff;
-  view.setInt16(offset, value, true);
+  const scaled = clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff;
+  // Round to the nearest integer rather than truncating: `setInt16` truncates
+  // toward zero, which would otherwise bias every sample slightly toward 0
+  // and add avoidable quantization noise.
+  view.setInt16(offset, Math.round(scaled), true);
 }
 
 /**
