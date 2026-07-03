@@ -61,7 +61,7 @@ one file.
       reload (today the dropzone is gone for good once one file is decoded).
 - [x] Persist the last-used FFT size and export format across sessions
       (`localStorage`), so the transport remembers your preferences.
-- [ ] A live peak-level meter during preview playback, styled as an analog VU meter —
+- [x] A live peak-level meter during preview playback, styled as an analog VU meter —
       reinforces the studio-hardware design direction and gives instant clip feedback.
 - [x] Technical file readout (sample rate / channel count) in the topbar file-meta
       strip, alongside the existing name/duration. (Bit depth is dropped from this
