@@ -72,14 +72,18 @@ re-renders both canvases).
   redraw, so they're positioned with `style.left` percentages against the same
   container the canvas fills.
 - **Only the waveform zooms/pans.** `WaveformForgeApp` tracks a `viewWindow`
-  (`{start, end}` in seconds, driven by mouse-wheel zoom, click-drag pan, and (with the
-  waveform panel focused) `+`/`-`/`0` keyboard shortcuts on the waveform panel, see
-  `src/lib/zoom.ts`); `render()` slices `monoSamples` to that window before computing
-  the envelope, and `TrimHandles.setViewWindow` keeps handle positions in sync. The
-  spectrogram always shows the full file (recomputing its FFT on every pan would be
-  expensive), so its playhead is positioned against total duration while the
-  waveform's playhead is positioned against the current view window — the two
-  intentionally use different ratios.
+  (`{start, end}` in seconds, see `src/lib/zoom.ts`) driven by four independent inputs:
+  mouse-wheel zoom, single-pointer click/touch-drag pan, two-pointer pinch-to-zoom, and
+  (with the waveform panel focused) `+`/`-`/`0` keyboard shortcuts. Pan and pinch share
+  one `activePointers` map keyed by `pointerId`; a second concurrent pointer switches
+  the gesture from pan to pinch (distance between pointers -> zoom factor, their
+  midpoint -> pivot) rather than running both at once. `render()` slices `monoSamples`
+  to the current view window before computing the envelope, and
+  `TrimHandles.setViewWindow` keeps handle positions in sync. The spectrogram always
+  shows the full file (recomputing its FFT on every pan would be expensive), so its
+  playhead is positioned against total duration while the waveform's playhead is
+  positioned against the current view window — the two intentionally use different
+  ratios.
 
 ## Layout
 
