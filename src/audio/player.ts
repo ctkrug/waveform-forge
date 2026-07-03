@@ -1,3 +1,4 @@
+import { resolvePlaybackTime } from "../lib/playback";
 import type { TrimSelection } from "../lib/trim";
 
 /**
@@ -9,6 +10,7 @@ export class SelectionPlayer {
   private sourceNode: AudioBufferSourceNode | null = null;
   private contextTimeAtStart = 0;
   private selectionAtStart: TrimSelection = { start: 0, end: 0 };
+  private loopAtStart = false;
   private onEnded: () => void = () => {};
 
   constructor(private readonly context: AudioContext) {}
@@ -21,7 +23,7 @@ export class SelectionPlayer {
     return this.sourceNode !== null;
   }
 
-  async play(buffer: AudioBuffer, selection: TrimSelection): Promise<void> {
+  async play(buffer: AudioBuffer, selection: TrimSelection, loop = false): Promise<void> {
     this.stop();
     if (this.context.state === "suspended") {
       await this.context.resume();
@@ -38,11 +40,19 @@ export class SelectionPlayer {
     };
 
     const duration = Math.max(0, selection.end - selection.start);
-    source.start(0, selection.start, duration);
+    if (loop && duration > 0) {
+      source.loop = true;
+      source.loopStart = selection.start;
+      source.loopEnd = selection.end;
+      source.start(0, selection.start);
+    } else {
+      source.start(0, selection.start, duration);
+    }
 
     this.sourceNode = source;
     this.contextTimeAtStart = this.context.currentTime;
     this.selectionAtStart = selection;
+    this.loopAtStart = loop;
   }
 
   stop(): void {
@@ -57,6 +67,11 @@ export class SelectionPlayer {
   currentTime(): number | null {
     if (!this.sourceNode) return null;
     const elapsed = this.context.currentTime - this.contextTimeAtStart;
-    return Math.min(this.selectionAtStart.end, this.selectionAtStart.start + elapsed);
+    return resolvePlaybackTime(
+      elapsed,
+      this.selectionAtStart.start,
+      this.selectionAtStart.end,
+      this.loopAtStart,
+    );
   }
 }
