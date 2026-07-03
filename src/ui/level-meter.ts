@@ -18,7 +18,11 @@ export class LevelMeter {
   constructor(private readonly el: LevelMeterElements) {}
 
   setLevel(ratio: number, clipping: boolean): void {
-    this.el.fill.style.width = `${Math.round(ratio * 100)}%`;
+    // Callers already clamp (dbToMeterRatio), but clamping again here keeps
+    // this reusable primitive safe on its own — an out-of-range ratio would
+    // otherwise silently produce a >100%-wide or negative-width fill bar.
+    const clampedRatio = Math.max(0, Math.min(1, ratio));
+    this.el.fill.style.width = `${Math.round(clampedRatio * 100)}%`;
 
     if (clipping) {
       this.el.clipLed.classList.add("is-lit");
