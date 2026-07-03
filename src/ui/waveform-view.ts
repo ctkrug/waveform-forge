@@ -1,4 +1,7 @@
+import type { ViewWindow } from "../lib/zoom";
 import type { WaveformEnvelope } from "../lib/waveform";
+import { timeTicks } from "../lib/ticks";
+import { drawVerticalTicks } from "./axis";
 import { fitCanvasToContainer } from "./canvas-utils";
 
 const TRACE_COLOR = "#39ff88";
@@ -13,13 +16,24 @@ const CENTER_LINE_COLOR = "rgba(138, 143, 156, 0.35)";
 export class WaveformView {
   constructor(private readonly canvas: HTMLCanvasElement) {}
 
-  render(envelope: WaveformEnvelope): void {
+  render(envelope: WaveformEnvelope, viewWindow?: ViewWindow): void {
     const ctx = fitCanvasToContainer(this.canvas);
     const width = this.canvas.clientWidth;
     const height = this.canvas.clientHeight;
     const midY = height / 2;
 
     ctx.clearRect(0, 0, width, height);
+
+    if (viewWindow) {
+      const span = viewWindow.end - viewWindow.start;
+      const ticks = timeTicks(viewWindow.start, viewWindow.end);
+      drawVerticalTicks(
+        ctx,
+        ticks,
+        (value) => (span === 0 ? 0 : ((value - viewWindow.start) / span) * width),
+        height,
+      );
+    }
 
     ctx.strokeStyle = CENTER_LINE_COLOR;
     ctx.lineWidth = 1;
