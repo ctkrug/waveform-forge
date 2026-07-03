@@ -316,8 +316,14 @@ export class WaveformForgeApp {
       this.monoSamples.length,
     );
     const visibleSamples = this.monoSamples.subarray(startSample, endSample);
-    this.waveformView.render(computeWaveformEnvelope(visibleSamples, columns));
-    this.spectrogramView.render(this.spectrogramFrames);
+    this.waveformView.render(
+      computeWaveformEnvelope(visibleSamples, columns),
+      this.viewWindow,
+    );
+    this.spectrogramView.render(this.spectrogramFrames, {
+      sampleRate: this.audioBuffer.sampleRate,
+      duration: this.audioBuffer.duration,
+    });
   }
 
   private wireIntake(): void {
