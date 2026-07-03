@@ -59,7 +59,7 @@ one file.
       a loop-aware playhead.
 - [x] "Load a new file" control so a session can move to a second file without a page
       reload (today the dropzone is gone for good once one file is decoded).
-- [ ] Persist the last-used FFT size and export format across sessions
+- [x] Persist the last-used FFT size and export format across sessions
       (`localStorage`), so the transport remembers your preferences.
 - [ ] A live peak-level meter during preview playback, styled as an analog VU meter —
       reinforces the studio-hardware design direction and gives instant clip feedback.

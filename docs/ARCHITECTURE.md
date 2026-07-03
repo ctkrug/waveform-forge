@@ -42,6 +42,7 @@ without a full page reload.
 | `src/lib/ticks.ts`           | `timeTicks`/`frequencyTicks` — "nice" (1/2/5x10^n) axis tick generation for gridlines and labels.                                                    |
 | `src/lib/math.ts`            | `clamp`.                                                                                                                                             |
 | `src/lib/playback.ts`        | `resolvePlaybackTime` — wraps elapsed playback time into the selection range when looping instead of clamping it to the selection end.               |
+| `src/lib/prefs.ts`           | `readPref`/`writePref` — try/caught `localStorage` wrapper for small persisted UI preferences (FFT size, export format).                              |
 | `src/audio/formats.ts`       | Intake file validation (size + type), independent of the DOM `File` type.                                                                            |
 | `src/audio/decode.ts`        | `decodeAudioFile` — native decode with ffmpeg.wasm fallback; shared `AudioContext`.                                                                  |
 | `src/audio/ffmpeg-client.ts` | Lazy-loaded ffmpeg.wasm singleton; `demuxToWav` (decode fallback) and `transcode` (export), both wired for the ~30MB core to load only on first use. |
