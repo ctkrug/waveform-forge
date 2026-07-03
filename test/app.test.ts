@@ -722,6 +722,57 @@ describe("WaveformForgeApp playback", () => {
     expect(elements.playIcon.textContent).toBe("▶");
     expect(elements.playToggle.getAttribute("aria-label")).toBe("Play");
   });
+
+  it("cancels the stale playhead loop from a fast double-click on Play", async () => {
+    // Reproduces the race documented at app.ts's startPlayheadLoop: a fresh
+    // AudioContext starts suspended, so the first play() awaits resume().
+    // A second click landing before that resume settles finds `playing`
+    // still false (no source yet) and starts its own beginPlayback(), which
+    // wins the player's playToken race and creates the real source. The
+    // *first* beginPlayback() still resolves afterwards (play() just bails
+    // out internally) and reaches startPlayheadLoop() too — without its
+    // cancel-existing-loop guard, that would leave two rAF loops polling
+    // the same player.
+    await createApp();
+    await loadFile("clip.mp3", 0.05);
+    fakeAudioContext.state = "suspended";
+    let resolveFirstResume: () => void = () => {};
+    fakeAudioContext.resume = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            resolveFirstResume = () => {
+              fakeAudioContext.state = "running";
+              resolve();
+            };
+          }),
+      )
+      .mockImplementation(async () => {
+        fakeAudioContext.state = "running";
+      });
+    const cancelAnimationFrameMock = cancelAnimationFrame as ReturnType<typeof vi.fn>;
+
+    elements.playToggle.dispatch("click");
+    await Promise.resolve();
+    elements.playToggle.dispatch("click");
+    resolveFirstResume();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    // Only the second click's play() actually created a source.
+    expect(fakeAudioContext.createBufferSource).toHaveBeenCalledTimes(1);
+    // The first (stale) beginPlayback()'s startPlayheadLoop() call found a
+    // loop already running from the second and canceled it before
+    // scheduling its own.
+    expect(cancelAnimationFrameMock).toHaveBeenCalled();
+    // Exactly one loop survives: draining every queued frame settles
+    // without ever finding a null source (which would flip back to Play).
+    for (let i = 0; i < 5 && rafQueue.length > 0; i++) tickRaf();
+    expect(elements.playIcon.textContent).toBe("⏸");
+  });
 });
 
 describe("WaveformForgeApp export", () => {
