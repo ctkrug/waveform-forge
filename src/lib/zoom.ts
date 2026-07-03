@@ -43,3 +43,18 @@ export function panWindow(
   const newStart = clamp(view.start + deltaSeconds, 0, Math.max(0, duration - span));
   return { start: newStart, end: newStart + span };
 }
+
+/**
+ * Converts a two-finger pinch gesture into a `zoomWindow` factor: fingers
+ * spreading apart (`currentDistance > startDistance`) yields a factor < 1
+ * (zoom in), pinching together yields a factor > 1 (zoom out). Returns
+ * `null` for a degenerate (zero-distance) gesture rather than dividing by
+ * zero.
+ */
+export function pinchZoomFactor(
+  startDistance: number,
+  currentDistance: number,
+): number | null {
+  if (startDistance <= 0 || currentDistance <= 0) return null;
+  return startDistance / currentDistance;
+}
