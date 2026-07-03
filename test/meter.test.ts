@@ -18,6 +18,10 @@ describe("amplitudeToDb", () => {
   it("never returns below the -60dB floor for a tiny amplitude", () => {
     expect(amplitudeToDb(0.0000001)).toBe(-60);
   });
+
+  it("floors NaN instead of propagating it (NaN <= 0 is false, so a naive guard misses it)", () => {
+    expect(amplitudeToDb(NaN)).toBe(-60);
+  });
 });
 
 describe("dbToMeterRatio", () => {

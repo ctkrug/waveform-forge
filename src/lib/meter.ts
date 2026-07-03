@@ -7,7 +7,11 @@ const MAX_DB = 0;
 
 /** Converts a linear peak amplitude (0..1, or above for a clipping signal) to decibels full-scale. */
 export function amplitudeToDb(amplitude: number): number {
-  if (amplitude <= 0) return MIN_DB;
+  // `amplitude <= 0` alone doesn't catch NaN (`NaN <= 0` is false) — a
+  // corrupt/malformed decoded file could feed a NaN sample into the
+  // analyser, and Math.log10(NaN) would otherwise propagate NaN through to
+  // the meter's CSS width.
+  if (!(amplitude > 0)) return MIN_DB;
   return Math.max(MIN_DB, 20 * Math.log10(amplitude));
 }
 
