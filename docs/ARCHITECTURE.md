@@ -38,12 +38,13 @@ re-renders both canvases).
 | `src/lib/zoom.ts`            | `zoomWindow`/`panWindow` — pivot-preserving zoom and clamped pan over a waveform view window.                                                        |
 | `src/lib/ticks.ts`           | `timeTicks`/`frequencyTicks` — "nice" (1/2/5x10^n) axis tick generation for gridlines and labels.                                                    |
 | `src/lib/math.ts`            | `clamp`.                                                                                                                                             |
+| `src/lib/playback.ts`        | `resolvePlaybackTime` — wraps elapsed playback time into the selection range when looping instead of clamping it to the selection end.               |
 | `src/audio/formats.ts`       | Intake file validation (size + type), independent of the DOM `File` type.                                                                            |
 | `src/audio/decode.ts`        | `decodeAudioFile` — native decode with ffmpeg.wasm fallback; shared `AudioContext`.                                                                  |
 | `src/audio/ffmpeg-client.ts` | Lazy-loaded ffmpeg.wasm singleton; `demuxToWav` (decode fallback) and `transcode` (export), both wired for the ~30MB core to load only on first use. |
 | `src/audio/wav-encoder.ts`   | Pure 16-bit PCM WAV encoder (multi-channel Float32 -> WAV `ArrayBuffer`).                                                                            |
 | `src/audio/trim-export.ts`   | `sliceChannels` — cuts PCM channels to the trim sample range.                                                                                        |
-| `src/audio/player.ts`        | `SelectionPlayer` — plays a trim selection via `AudioBufferSourceNode`, exposes a clock-derived `currentTime()` for the playhead.                    |
+| `src/audio/player.ts`        | `SelectionPlayer` — plays a trim selection via `AudioBufferSourceNode`, optionally looped, exposes a clock-derived `currentTime()` for the playhead. |
 | `src/ui/canvas-utils.ts`     | `fitCanvasToContainer` — devicePixelRatio-correct canvas backing-store sizing.                                                                       |
 | `src/ui/axis.ts`             | `drawVerticalTicks`/`drawHorizontalTicks` — shared gridline + halo-backed label rendering for canvas axes.                                           |
 | `src/ui/waveform-view.ts`    | Renders the min/max envelope as a glowing phosphor trace, with a time-axis overlay against the current view window.                                  |
