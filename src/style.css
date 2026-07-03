@@ -154,6 +154,7 @@ body {
 }
 
 .dropzone {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -171,6 +172,47 @@ body {
     border-color var(--motion-ui) var(--ease-out),
     box-shadow var(--motion-ui) var(--ease-out),
     background var(--motion-ui) var(--ease-out);
+}
+
+/*
+ * The flat idle trace from docs/DESIGN.md's signature detail: a
+ * disconnected-scope-input line across the empty panel, not just bare
+ * text on a dashed box. Suppressed for the loading/error/dragover states,
+ * which already have their own treatment.
+ */
+.dropzone::before {
+  content: "";
+  position: absolute;
+  left: var(--space-4);
+  right: var(--space-4);
+  top: 50%;
+  height: 1px;
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: 0 0 8px rgb(57 255 136 / 0.35);
+  animation: idle-trace-flicker 3400ms ease-in-out infinite;
+}
+
+.dropzone.is-loading::before,
+.dropzone.is-error::before,
+.dropzone.is-dragover::before {
+  opacity: 0;
+}
+
+@keyframes idle-trace-flicker {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropzone::before {
+    animation: none;
+    opacity: 0.6;
+  }
 }
 
 .dropzone:hover {
