@@ -195,6 +195,24 @@ export class WaveformForgeApp {
       if (!this.audioBuffer) return;
       this.setViewWindow({ start: 0, end: this.audioBuffer.duration });
     });
+
+    waveformWrap.addEventListener("keydown", (event) => {
+      if (!this.audioBuffer) return;
+      if (event.key === "+" || event.key === "=") {
+        event.preventDefault();
+        this.setViewWindow(
+          zoomWindow(this.viewWindow, this.audioBuffer.duration, 1 / 1.3, 0.5),
+        );
+      } else if (event.key === "-" || event.key === "_") {
+        event.preventDefault();
+        this.setViewWindow(
+          zoomWindow(this.viewWindow, this.audioBuffer.duration, 1.3, 0.5),
+        );
+      } else if (event.key === "0") {
+        event.preventDefault();
+        this.setViewWindow({ start: 0, end: this.audioBuffer.duration });
+      }
+    });
   }
 
   private setViewWindow(view: ViewWindow): void {
