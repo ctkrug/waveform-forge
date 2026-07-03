@@ -43,7 +43,8 @@ Web Audio API. Your file never leaves the browser tab.
   playback.
 - **Canvas 2D** — waveform + spectrogram rendering (a hand-written FFT, no charting
   library).
-- **Vitest** — unit tests for the FFT, windowing, and waveform-reduction math.
+- **Vitest** — unit tests across the whole app (FFT/windowing/waveform math, the
+  ffmpeg.wasm client, the top-level UI controller), ~99.8% statement coverage.
 
 See [`docs/VISION.md`](docs/VISION.md) for the full design rationale and
 [`docs/BACKLOG.md`](docs/BACKLOG.md) for the build plan.
