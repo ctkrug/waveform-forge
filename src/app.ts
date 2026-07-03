@@ -35,6 +35,7 @@ interface Elements {
   spectrogramPlayhead: HTMLElement;
   playToggle: HTMLButtonElement;
   playIcon: HTMLElement;
+  loopToggle: HTMLButtonElement;
   timeReadout: HTMLElement;
   fftSizeSelect: HTMLSelectElement;
   formatSelect: HTMLSelectElement;
@@ -76,6 +77,7 @@ export class WaveformForgeApp {
   private playheadRafId: number | null = null;
   private viewWindow: ViewWindow = { start: 0, end: 0 };
   private spectrogramFftSize = DEFAULT_SPECTROGRAM_FFT_SIZE;
+  private loopEnabled = false;
   private readonly activePointers = new Map<number, number>();
   private panState: { startClientX: number; startWindow: ViewWindow } | null = null;
   private pinchState: {
@@ -105,6 +107,7 @@ export class WaveformForgeApp {
       spectrogramPlayhead: requireElement("[data-spectrogram-playhead]"),
       playToggle: requireElement("[data-play-toggle]"),
       playIcon: requireElement("[data-play-icon]"),
+      loopToggle: requireElement("[data-loop-toggle]"),
       timeReadout: requireElement("[data-time-readout]"),
       fftSizeSelect: requireElement("[data-fft-size-select]"),
       formatSelect: requireElement("[data-format-select]"),
@@ -132,9 +135,24 @@ export class WaveformForgeApp {
     this.wireIntake();
     this.wireResize();
     this.wireTransport();
+    this.wireLoopToggle();
     this.wireExport();
     this.wireZoomPan();
     this.wireFftSize();
+  }
+
+  private wireLoopToggle(): void {
+    this.el.loopToggle.addEventListener("click", () => {
+      this.loopEnabled = !this.loopEnabled;
+      this.el.loopToggle.setAttribute("aria-pressed", String(this.loopEnabled));
+      if (this.player.playing && this.audioBuffer) {
+        void this.player.play(
+          this.audioBuffer,
+          this.trimHandles.getSelection(),
+          this.loopEnabled,
+        );
+      }
+    });
   }
 
   private wireFftSize(): void {
@@ -336,7 +354,11 @@ export class WaveformForgeApp {
         return;
       }
       if (!this.audioBuffer) return;
-      void this.player.play(this.audioBuffer, this.trimHandles.getSelection());
+      void this.player.play(
+        this.audioBuffer,
+        this.trimHandles.getSelection(),
+        this.loopEnabled,
+      );
       this.el.playIcon.textContent = ICON_PAUSE;
       this.el.playToggle.setAttribute("aria-label", "Pause");
       this.startPlayheadLoop();
