@@ -48,3 +48,20 @@ guide later BUILD runs, not a sprint board. All start unchecked.
       transport off-screen), plus a `landing/` marketing page sharing the same design
       tokens (named `landing/` rather than `site/`, since `site/` is this project's
       gitignored build-output directory, not a source directory).
+
+## Epic 5: Session Controls & Studio Readouts
+
+All of v1's core pipeline (intake → visualize → trim → export) is done. This epic is
+the "lived-with tool" pass: things you only notice once you've used it for more than
+one file.
+
+- [ ] Loop preview playback of the trim selection, toggleable from the transport, with
+      a loop-aware playhead.
+- [ ] "Load a new file" control so a session can move to a second file without a page
+      reload (today the dropzone is gone for good once one file is decoded).
+- [ ] Persist the last-used FFT size and export format across sessions
+      (`localStorage`), so the transport remembers your preferences.
+- [ ] A live peak-level meter during preview playback, styled as an analog VU meter —
+      reinforces the studio-hardware design direction and gives instant clip feedback.
+- [ ] Technical file readout (sample rate / channels / bit depth) in the topbar
+      file-meta strip, alongside the existing name/duration.
