@@ -39,6 +39,10 @@ with a stale result. `src/audio/ffmpeg-client.ts` has a matching guard one level
 down: `demuxToWav` and `transcode` both drive the single shared (non-reentrant)
 ffmpeg.wasm instance, so they're serialized through a promise queue
 (`withFfmpegLock`) rather than ever issuing two concurrent `exec()` calls.
+`SelectionPlayer.play()` (`src/audio/player.ts`) has the same shape of guard for the
+same reason: it awaits `AudioContext.resume()` on the first playback, and a `playToken`
+bumped by both `play()` and `stop()` stops a superseded or since-stopped call from
+starting a source once that await settles.
 
 ## Modules
 
