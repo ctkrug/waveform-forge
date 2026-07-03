@@ -21,7 +21,10 @@ function niceStep(span: number, targetCount: number): number {
 function formatTimeTick(seconds: number, step: number): string {
   const minutes = Math.floor(seconds / 60);
   const secs = seconds - minutes * 60;
-  const secsLabel = step < 1 ? secs.toFixed(2).padStart(5, "0") : Math.round(secs).toString().padStart(2, "0");
+  const secsLabel =
+    step < 1
+      ? secs.toFixed(2).padStart(5, "0")
+      : Math.round(secs).toString().padStart(2, "0");
   return `${minutes}:${secsLabel}`;
 }
 

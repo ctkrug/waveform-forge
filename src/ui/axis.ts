@@ -6,7 +6,12 @@ const LABEL_HALO_COLOR = "rgba(21, 23, 27, 0.85)";
 const LABEL_FONT = "10px Inter, system-ui, sans-serif";
 
 /** Draws label text with a dark halo so it stays legible over busy canvas content. */
-function drawLabel(ctx: CanvasRenderingContext2D, label: string, x: number, y: number): void {
+function drawLabel(
+  ctx: CanvasRenderingContext2D,
+  label: string,
+  x: number,
+  y: number,
+): void {
   ctx.lineWidth = 3;
   ctx.strokeStyle = LABEL_HALO_COLOR;
   ctx.strokeText(label, x, y);

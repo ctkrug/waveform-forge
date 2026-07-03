@@ -10,7 +10,14 @@ describe("timeTicks", () => {
   it("lands on whole seconds for a short span", () => {
     const ticks = timeTicks(0, 10, 5);
     expect(ticks.map((t) => t.value)).toEqual([0, 2, 4, 6, 8, 10]);
-    expect(ticks.map((t) => t.label)).toEqual(["0:00", "0:02", "0:04", "0:06", "0:08", "0:10"]);
+    expect(ticks.map((t) => t.label)).toEqual([
+      "0:00",
+      "0:02",
+      "0:04",
+      "0:06",
+      "0:08",
+      "0:10",
+    ]);
   });
 
   it("formats minutes:seconds for a multi-minute span", () => {
