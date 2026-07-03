@@ -24,7 +24,10 @@ the current `AudioBuffer`/mono samples/spectrogram frames as private fields and 
 DOM events to the pipeline above. There's no framework and no global store — state
 lives on the controller instance, and each user action re-renders only what it touched
 (trim drag repositions DOM overlays; a resize re-renders the waveform canvas; decode
-re-renders both canvases).
+re-renders both canvases). `resetSession()` (wired to the topbar's "Load new file"
+button) nulls out that state and swaps the shell back to the empty dropzone
+(`showDropzone()`, shared with the error path) so a session can move to a second file
+without a full page reload.
 
 ## Modules
 
