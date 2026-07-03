@@ -5,6 +5,8 @@ const execMock = vi.fn();
 const writeFileMock = vi.fn();
 const readFileMock = vi.fn();
 const deleteFileMock = vi.fn();
+const onMock = vi.fn();
+const offMock = vi.fn();
 
 vi.mock("@ffmpeg/ffmpeg", () => ({
   FFmpeg: vi.fn().mockImplementation(() => ({
@@ -13,8 +15,8 @@ vi.mock("@ffmpeg/ffmpeg", () => ({
     writeFile: writeFileMock,
     readFile: readFileMock,
     deleteFile: deleteFileMock,
-    on: vi.fn(),
-    off: vi.fn(),
+    on: onMock,
+    off: offMock,
   })),
 }));
 
@@ -42,6 +44,8 @@ beforeEach(() => {
   writeFileMock.mockReset().mockResolvedValue(undefined);
   readFileMock.mockReset().mockResolvedValue(new Uint8Array([1, 2, 3]));
   deleteFileMock.mockReset().mockResolvedValue(undefined);
+  onMock.mockReset();
+  offMock.mockReset();
   // ffmpeg-client.ts names its scratch files with crypto.randomUUID(); the
   // Vitest worker's Node runtime doesn't always expose the WebCrypto global.
   let uuidCounter = 0;
@@ -122,5 +126,64 @@ describe("demuxToWav / transcode call serialization", () => {
     await expect(demuxToWav(fakeFile)).rejects.toThrow("boom");
 
     expect(deleteFileMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("transcode", () => {
+  it("registers a progress listener only for the call's own lock turn, then unregisters it", async () => {
+    loadMock.mockResolvedValue(undefined);
+    execMock.mockResolvedValue(0);
+    const { transcode } = await freshModule();
+
+    await transcode(new ArrayBuffer(4), "mp3", () => {});
+
+    expect(onMock).toHaveBeenCalledTimes(1);
+    expect(onMock).toHaveBeenCalledWith("progress", expect.any(Function));
+    expect(offMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips progress-listener registration entirely when no callback is given", async () => {
+    loadMock.mockResolvedValue(undefined);
+    execMock.mockResolvedValue(0);
+    const { transcode } = await freshModule();
+
+    await transcode(new ArrayBuffer(4), "wav");
+
+    expect(onMock).not.toHaveBeenCalled();
+    expect(offMock).not.toHaveBeenCalled();
+  });
+
+  it("clamps a reported progress ratio into 0..1 before forwarding it", async () => {
+    loadMock.mockResolvedValue(undefined);
+    execMock.mockImplementation(async () => {
+      const listener = onMock.mock.calls[0][1] as (e: { progress: number }) => void;
+      listener({ progress: 1.5 });
+      listener({ progress: -0.2 });
+      return 0;
+    });
+    const ratios: number[] = [];
+    const { transcode } = await freshModule();
+
+    await transcode(new ArrayBuffer(4), "aac", (ratio) => ratios.push(ratio));
+
+    expect(ratios).toEqual([1, 0]);
+  });
+
+  it("rejects with the exit code when ffmpeg reports a non-zero result", async () => {
+    loadMock.mockResolvedValue(undefined);
+    execMock.mockResolvedValue(1);
+    const { transcode } = await freshModule();
+
+    await expect(transcode(new ArrayBuffer(4), "mp3")).rejects.toThrow(/exit code 1/);
+  });
+
+  it("resolves a Blob typed for the requested export format", async () => {
+    loadMock.mockResolvedValue(undefined);
+    execMock.mockResolvedValue(0);
+    const { transcode } = await freshModule();
+
+    const blob = await transcode(new ArrayBuffer(4), "mp3");
+
+    expect(blob.type).toBe("audio/mpeg");
   });
 });
