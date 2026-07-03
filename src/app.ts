@@ -4,6 +4,7 @@ import { validateAudioFile } from "./audio/formats";
 import { SelectionPlayer } from "./audio/player";
 import { sliceChannels } from "./audio/trim-export";
 import { encodeWav } from "./audio/wav-encoder";
+import { readPref, writePref } from "./lib/prefs";
 import { computeSpectrogram } from "./lib/spectrogram";
 import { selectionToSampleRange } from "./lib/trim";
 import { computeWaveformEnvelope, downmixToMono } from "./lib/waveform";
@@ -14,6 +15,13 @@ import { WaveformView } from "./ui/waveform-view";
 
 /** Default FFT size for the spectrogram analysis window; user-adjustable via the FFT select. */
 const DEFAULT_SPECTROGRAM_FFT_SIZE = 1024;
+const PREF_FFT_SIZE = "fft-size";
+const PREF_EXPORT_FORMAT = "export-format";
+
+/** True if `value` matches one of `select`'s options, so a stored preference can't set an invalid value. */
+function isValidOption(select: HTMLSelectElement, value: string): boolean {
+  return Array.from(select.options).some((option) => option.value === value);
+}
 
 interface Elements {
   dropzone: HTMLElement;
@@ -142,6 +150,21 @@ export class WaveformForgeApp {
     this.wireExport();
     this.wireZoomPan();
     this.wireFftSize();
+    this.restorePreferences();
+  }
+
+  /** Applies previously saved FFT-size/export-format selections, if any, on startup. */
+  private restorePreferences(): void {
+    const savedFftSize = readPref(PREF_FFT_SIZE);
+    if (savedFftSize && isValidOption(this.el.fftSizeSelect, savedFftSize)) {
+      this.el.fftSizeSelect.value = savedFftSize;
+      this.spectrogramFftSize = Number(savedFftSize);
+    }
+
+    const savedFormat = readPref(PREF_EXPORT_FORMAT);
+    if (savedFormat && isValidOption(this.el.formatSelect, savedFormat)) {
+      this.el.formatSelect.value = savedFormat;
+    }
   }
 
   private wireLoadNew(): void {
@@ -191,6 +214,7 @@ export class WaveformForgeApp {
   private wireFftSize(): void {
     this.el.fftSizeSelect.addEventListener("change", () => {
       this.spectrogramFftSize = Number(this.el.fftSizeSelect.value);
+      writePref(PREF_FFT_SIZE, this.el.fftSizeSelect.value);
       if (!this.monoSamples) return;
       this.spectrogramFrames = computeSpectrogram(this.monoSamples, {
         fftSize: this.spectrogramFftSize,
@@ -328,6 +352,9 @@ export class WaveformForgeApp {
 
   private wireExport(): void {
     this.el.exportButton.addEventListener("click", () => void this.runExport());
+    this.el.formatSelect.addEventListener("change", () => {
+      writePref(PREF_EXPORT_FORMAT, this.el.formatSelect.value);
+    });
   }
 
   private async runExport(): Promise<void> {
