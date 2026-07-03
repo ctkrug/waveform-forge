@@ -50,7 +50,10 @@ class FakeElement {
   }
 }
 
-function createHandles(): { handles: TrimHandles; el: Record<keyof TrimHandlesElements, FakeElement> } {
+function createHandles(): {
+  handles: TrimHandles;
+  el: Record<keyof TrimHandlesElements, FakeElement>;
+} {
   const el = {
     container: new FakeElement(),
     startHandle: new FakeElement(),

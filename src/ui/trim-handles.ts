@@ -123,10 +123,18 @@ export class TrimHandles {
 
       event.preventDefault();
       if (which === "start") {
-        const time = clampEdgeAgainstOther(which, this.selection.start + delta, this.selection);
+        const time = clampEdgeAgainstOther(
+          which,
+          this.selection.start + delta,
+          this.selection,
+        );
         this.setSelection(time, this.selection.end);
       } else {
-        const time = clampEdgeAgainstOther(which, this.selection.end + delta, this.selection);
+        const time = clampEdgeAgainstOther(
+          which,
+          this.selection.end + delta,
+          this.selection,
+        );
         this.setSelection(this.selection.start, time);
       }
     });

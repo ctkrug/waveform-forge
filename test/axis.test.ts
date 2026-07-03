@@ -14,7 +14,8 @@ function fakeCtx() {
     stroke: () => calls.push("stroke"),
     strokeText: (text: string, x: number, y: number) =>
       calls.push(`strokeText ${text} ${x} ${y}`),
-    fillText: (text: string, x: number, y: number) => calls.push(`fillText ${text} ${x} ${y}`),
+    fillText: (text: string, x: number, y: number) =>
+      calls.push(`fillText ${text} ${x} ${y}`),
   } as unknown as CanvasRenderingContext2D;
   return { ctx, calls };
 }
