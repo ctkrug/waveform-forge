@@ -12,9 +12,8 @@ import { SpectrogramView } from "./ui/spectrogram-view";
 import { TrimHandles } from "./ui/trim-handles";
 import { WaveformView } from "./ui/waveform-view";
 
-/** FFT size for the spectrogram analysis window; balances frequency vs. time resolution. */
-const SPECTROGRAM_FFT_SIZE = 1024;
-const SPECTROGRAM_HOP_SIZE = 512;
+/** Default FFT size for the spectrogram analysis window; user-adjustable via the FFT select. */
+const DEFAULT_SPECTROGRAM_FFT_SIZE = 1024;
 
 interface Elements {
   dropzone: HTMLElement;
@@ -37,6 +36,7 @@ interface Elements {
   playToggle: HTMLButtonElement;
   playIcon: HTMLElement;
   timeReadout: HTMLElement;
+  fftSizeSelect: HTMLSelectElement;
   formatSelect: HTMLSelectElement;
   exportButton: HTMLButtonElement;
   exportProgress: HTMLElement;
@@ -75,6 +75,7 @@ export class WaveformForgeApp {
   private audioBuffer: AudioBuffer | null = null;
   private playheadRafId: number | null = null;
   private viewWindow: ViewWindow = { start: 0, end: 0 };
+  private spectrogramFftSize = DEFAULT_SPECTROGRAM_FFT_SIZE;
 
   constructor() {
     this.el = {
@@ -98,6 +99,7 @@ export class WaveformForgeApp {
       playToggle: requireElement("[data-play-toggle]"),
       playIcon: requireElement("[data-play-icon]"),
       timeReadout: requireElement("[data-time-readout]"),
+      fftSizeSelect: requireElement("[data-fft-size-select]"),
       formatSelect: requireElement("[data-format-select]"),
       exportButton: requireElement("[data-export-button]"),
       exportProgress: requireElement("[data-export-progress]"),
@@ -125,6 +127,19 @@ export class WaveformForgeApp {
     this.wireTransport();
     this.wireExport();
     this.wireZoomPan();
+    this.wireFftSize();
+  }
+
+  private wireFftSize(): void {
+    this.el.fftSizeSelect.addEventListener("change", () => {
+      this.spectrogramFftSize = Number(this.el.fftSizeSelect.value);
+      if (!this.monoSamples) return;
+      this.spectrogramFrames = computeSpectrogram(this.monoSamples, {
+        fftSize: this.spectrogramFftSize,
+        hopSize: this.spectrogramFftSize / 2,
+      });
+      this.render();
+    });
   }
 
   private wireZoomPan(): void {
@@ -381,8 +396,8 @@ export class WaveformForgeApp {
       );
 
       this.spectrogramFrames = computeSpectrogram(this.monoSamples, {
-        fftSize: SPECTROGRAM_FFT_SIZE,
-        hopSize: SPECTROGRAM_HOP_SIZE,
+        fftSize: this.spectrogramFftSize,
+        hopSize: this.spectrogramFftSize / 2,
       });
 
       this.trimHandles.setDuration(buffer.duration);
