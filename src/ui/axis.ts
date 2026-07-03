@@ -2,7 +2,17 @@ import type { Tick } from "../lib/ticks";
 
 const GRID_COLOR = "rgba(138, 143, 156, 0.18)";
 const LABEL_COLOR = "#8a8f9c";
+const LABEL_HALO_COLOR = "rgba(21, 23, 27, 0.85)";
 const LABEL_FONT = "10px Inter, system-ui, sans-serif";
+
+/** Draws label text with a dark halo so it stays legible over busy canvas content. */
+function drawLabel(ctx: CanvasRenderingContext2D, label: string, x: number, y: number): void {
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = LABEL_HALO_COLOR;
+  ctx.strokeText(label, x, y);
+  ctx.fillStyle = LABEL_COLOR;
+  ctx.fillText(label, x, y);
+}
 
 /** Draws vertical gridlines + labels at each tick's x position (e.g. a time axis). */
 export function drawVerticalTicks(
@@ -22,8 +32,7 @@ export function drawVerticalTicks(
     ctx.moveTo(x, 0);
     ctx.lineTo(x, height);
     ctx.stroke();
-    ctx.fillStyle = LABEL_COLOR;
-    ctx.fillText(tick.label, x + 3, height - 2);
+    drawLabel(ctx, tick.label, x + 3, height - 2);
   }
   ctx.restore();
 }
@@ -46,8 +55,7 @@ export function drawHorizontalTicks(
     ctx.moveTo(0, y);
     ctx.lineTo(width, y);
     ctx.stroke();
-    ctx.fillStyle = LABEL_COLOR;
-    ctx.fillText(tick.label, 3, y - 2);
+    drawLabel(ctx, tick.label, 3, y - 2);
   }
   ctx.restore();
 }
