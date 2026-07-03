@@ -510,6 +510,16 @@ export class WaveformForgeApp {
   }
 
   private startPlayheadLoop(): void {
+    // A stale beginPlayback() call from a fast double-click on Play still
+    // resolves player.play() successfully (it just bails out internally
+    // without starting a source) and reaches here too — cancel any loop
+    // already running so a second one can't stack on top of it. Confirmed
+    // live: without this, a double-click doubled the animation-frame rate
+    // for the rest of that playback (two independent loops polling the
+    // same player).
+    if (this.playheadRafId !== null) {
+      cancelAnimationFrame(this.playheadRafId);
+    }
     const step = () => {
       const time = this.player.currentTime();
       if (time === null || !this.audioBuffer) {
