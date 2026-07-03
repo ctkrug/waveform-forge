@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { amplitudeToDb, dbToMeterRatio, isClipping } from "../src/lib/meter";
+import {
+  amplitudeToDb,
+  dbToMeterRatio,
+  isClipping,
+  rmsAmplitude,
+} from "../src/lib/meter";
 
 describe("amplitudeToDb", () => {
   it("returns 0dB for full-scale amplitude", () => {
@@ -43,6 +48,35 @@ describe("dbToMeterRatio", () => {
 
   it("clamps values below -60dB to 0", () => {
     expect(dbToMeterRatio(-90)).toBe(0);
+  });
+});
+
+describe("rmsAmplitude", () => {
+  it("returns 0 for an empty block", () => {
+    expect(rmsAmplitude(new Float32Array(0))).toBe(0);
+  });
+
+  it("returns 0 for silence", () => {
+    expect(rmsAmplitude(new Float32Array([0, 0, 0]))).toBe(0);
+  });
+
+  it("returns the constant amplitude for a DC block", () => {
+    expect(rmsAmplitude(new Float32Array([0.5, 0.5, 0.5, 0.5]))).toBeCloseTo(0.5, 9);
+  });
+
+  it("reads well below peak for a full-scale square wave (not just instantaneous peak)", () => {
+    // A [-1, 1] square wave has an RMS of exactly 1 in theory, but a signal
+    // that only touches full scale half the time should read lower than
+    // its own peak — this is the whole reason the meter uses RMS instead
+    // of peak: a single transient sample shouldn't read as "loud" as a
+    // sustained one.
+    const block = new Float32Array([1, 0, 1, 0, 1, 0]);
+    expect(rmsAmplitude(block)).toBeCloseTo(Math.sqrt(0.5), 9);
+    expect(rmsAmplitude(block)).toBeLessThan(1);
+  });
+
+  it("is unaffected by sign — a symmetric signal averages the same as its absolute value", () => {
+    expect(rmsAmplitude(new Float32Array([0.5, -0.5]))).toBeCloseTo(0.5, 9);
   });
 });
 
