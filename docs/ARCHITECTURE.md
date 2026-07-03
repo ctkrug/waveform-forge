@@ -119,12 +119,14 @@ viewport, which previously let the page overflow well past 100vh and pushed the
 transport strip off-screen. Every panel in the chain (`.scope-panel`, `.scope-stack`)
 uses `min-height: 0` (the standard flex-child override) rather than a `vh` floor.
 
-## Landing page
+## Landing / marketing surface
 
-`landing/index.html` + `landing/style.css` are a small static marketing page (no build
-step — plain HTML/CSS, own copy of the `docs/DESIGN.md` tokens) that links to the app at
-`../index.html`. It lives in `landing/`, not `site/`: `site/` is this project's
-gitignored build-output directory name (see `.gitignore`), not a source directory.
+This is a servable app, so its own page **is** the landing page. `.app` fills the first
+viewport (`100dvh`); below it, `index.html` carries a marketing/SEO panel (`.about`) and a
+site footer: a benefit list, a "how it works" list, a short FAQ, a visible GitHub link, and
+a portfolio cross-link. That copy reuses the app's `docs/DESIGN.md` tokens from
+`src/style.css`, so the product and its landing copy are one brand shipped from one build
+(`dist/`) rather than a second, separately-maintained page.
 
 ## Testing
 
