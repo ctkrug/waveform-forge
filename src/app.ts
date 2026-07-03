@@ -7,7 +7,7 @@ import { encodeWav } from "./audio/wav-encoder";
 import { computeSpectrogram } from "./lib/spectrogram";
 import { selectionToSampleRange } from "./lib/trim";
 import { computeWaveformEnvelope, downmixToMono } from "./lib/waveform";
-import { panWindow, type ViewWindow, zoomWindow } from "./lib/zoom";
+import { panWindow, pinchZoomFactor, type ViewWindow, zoomWindow } from "./lib/zoom";
 import { SpectrogramView } from "./ui/spectrogram-view";
 import { TrimHandles } from "./ui/trim-handles";
 import { WaveformView } from "./ui/waveform-view";
@@ -255,12 +255,10 @@ export class WaveformForgeApp {
   /** Applies the live pinch distance as a zoom factor relative to the pinch's start. */
   private applyPinch(): void {
     if (!this.pinchState || !this.audioBuffer) return;
-    const positions = [...this.activePointers.values()];
-    const [x1, x2] = positions;
-    const distance = Math.abs(x2 - x1);
-    if (distance === 0) return;
+    const [x1, x2] = [...this.activePointers.values()];
+    const factor = pinchZoomFactor(this.pinchState.startDistance, Math.abs(x2 - x1));
+    if (factor === null) return;
 
-    const factor = this.pinchState.startDistance / distance;
     this.setViewWindow(
       zoomWindow(
         this.pinchState.startWindow,
