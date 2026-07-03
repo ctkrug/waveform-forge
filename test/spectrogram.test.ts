@@ -46,6 +46,13 @@ describe("magnitudeToDb", () => {
     expect(magnitudeToDb(0)).toBe(-100);
     expect(magnitudeToDb(0, -60)).toBe(-60);
   });
+
+  it("floors a negative magnitude the same as silence", () => {
+    // Magnitude is a Euclidean norm and should never be negative in
+    // practice, but Math.log10 of a negative number is NaN — guard against
+    // ever feeding that through to the floor comparison.
+    expect(magnitudeToDb(-5)).toBe(-100);
+  });
 });
 
 describe("normalizeDb", () => {
