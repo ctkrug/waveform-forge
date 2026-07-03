@@ -61,7 +61,7 @@ starting a source once that await settles.
 | `src/lib/format.ts`          | `describeAudioTech` (sample rate/channel readout) and `formatDuration` (`MM:SS.mmm`, rounding to the millisecond before splitting so a value can't render as a seconds field of "60").                                                                                                                                         |
 | `src/lib/meter.ts`           | `amplitudeToDb`/`dbToMeterRatio`/`isClipping`/`rmsAmplitude` — the level meter's linear-amplitude -> dB -> 0..1 fill-ratio scale, its clip threshold, and the RMS reduction the fill reads (peak alone is used only for clip detection).                                                                                       |
 | `src/audio/formats.ts`       | Intake file validation (size + type), independent of the DOM `File` type.                                                                                                                                                                                                                                                      |
-| `src/audio/decode.ts`        | `decodeAudioFile` — native decode with ffmpeg.wasm fallback; shared `AudioContext`.                                                                                                                                                                                                                                            |
+| `src/audio/decode.ts`        | `decodeAudioFile` — native decode with ffmpeg.wasm fallback (an `onFallback` hook lets the caller surface status before that fallback's ~30MB first-use download starts); shared `AudioContext`.                                                                                                                             |
 | `src/audio/ffmpeg-client.ts` | Lazy-loaded ffmpeg.wasm singleton; `demuxToWav` (decode fallback) and `transcode` (export), both wired for the ~30MB core to load only on first use, serialized through `withFfmpegLock` so their `exec()` calls never overlap, and retried on the next call if the initial load itself fails (a failed load is never cached). |
 | `src/audio/wav-encoder.ts`   | Pure 16-bit PCM WAV encoder (multi-channel Float32 -> WAV `ArrayBuffer`).                                                                                                                                                                                                                                                      |
 | `src/audio/trim-export.ts`   | `sliceChannels` — cuts PCM channels to the trim sample range.                                                                                                                                                                                                                                                                  |
@@ -130,10 +130,24 @@ gitignored build-output directory name (see `.gitignore`), not a source director
 
 Pure logic (`src/lib/**`, `src/audio/formats.ts`, `src/audio/wav-encoder.ts`,
 `src/audio/trim-export.ts`, `src/ui/canvas-utils.ts`'s `computeBackingSize`) is
-unit-tested with Vitest — see `test/`. Browser-only integration code
-(`decode.ts`, `ffmpeg-client.ts`, `player.ts`, canvas rendering, `app.ts`'s DOM wiring)
-is verified by running the app (`npm run dev`) rather than mocked in tests, per the
-project's "test what's testable, run what isn't" split.
+unit-tested with Vitest — see `test/`.
+
+The rest of `src/ui/**` (canvas rendering, trim-handle drag/keyboard wiring, the level
+meter) is also unit-tested, but without jsdom: vitest runs in the plain `node`
+environment, so each test builds a small duck-typed fake of just the DOM surface the
+module under test actually touches — a fake `CanvasRenderingContext2D` that records
+call order/arguments (`test/axis.test.ts`, `test/waveform-view.test.ts`,
+`test/spectrogram-view.test.ts`), or a fake `EventTarget` with `addEventListener`/
+`dispatch` (`test/trim-handles.test.ts`), or plain objects with a `style`/`classList`
+(`test/level-meter.test.ts`). No `jsdom`/`happy-dom` dependency, no real `<canvas>` —
+just enough surface to drive the real class through its real code path. Run
+`npm run test:coverage` to see where the gaps are; the `src/ui` and `src/lib` layers
+are both at 100% statement coverage as of this pass.
+
+Browser-only integration code that genuinely can't be faked meaningfully this way —
+`decode.ts`, `ffmpeg-client.ts`, `player.ts` (real `AudioContext`/ffmpeg.wasm behavior),
+and `app.ts`'s top-level DOM wiring itself — is verified by running the app
+(`npm run dev`) rather than mocked in tests.
 
 ## Build / run
 
