@@ -144,10 +144,20 @@ just enough surface to drive the real class through its real code path. Run
 `npm run test:coverage` to see where the gaps are; the `src/ui` and `src/lib` layers
 are both at 100% statement coverage as of this pass.
 
-Browser-only integration code that genuinely can't be faked meaningfully this way —
-`decode.ts`, `ffmpeg-client.ts`, `player.ts` (real `AudioContext`/ffmpeg.wasm behavior),
-and `app.ts`'s top-level DOM wiring itself — is verified by running the app
-(`npm run dev`) rather than mocked in tests.
+`src/audio/ffmpeg-client.ts` is unit-tested too, but with `vi.mock` rather than a
+duck-typed fake: `test/ffmpeg-client.test.ts` mocks the `@ffmpeg/ffmpeg` /
+`@ffmpeg/util` packages themselves (a fake `FFmpeg` class whose `load`/`exec`/`on`/
+`off` are `vi.fn()`s the test controls), since the concurrency behavior it needs to
+lock in — a failed core load isn't cached, `demuxToWav`/`transcode` never overlap
+`exec()` calls, the progress listener is scoped to one call's lock turn — depends on
+timing the module's own singleton state manages, not on any DOM surface. Each test
+calls `vi.resetModules()` and re-imports the module fresh, since that singleton state
+(`instance`/`loadPromise`/`queue`) would otherwise leak between tests in the same file.
+
+Browser-only integration code that genuinely can't be exercised meaningfully outside a
+real browser — `decode.ts` and `player.ts` (real `AudioContext` behavior) and `app.ts`'s
+top-level DOM wiring itself — is verified by running the app (`npm run dev`) rather
+than mocked in tests.
 
 ## Build / run
 
