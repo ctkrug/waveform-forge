@@ -160,7 +160,32 @@ export class WaveformForgeApp {
     this.wireExport();
     this.wireZoomPan();
     this.wireFftSize();
+    this.wireSpacebarPlayback();
     this.restorePreferences();
+  }
+
+  /**
+   * Global spacebar play/pause, the convention every audio/video tool
+   * follows. Skipped when focus is on a button/select/input/contenteditable
+   * so a focused control's own native space-activation (e.g. the play
+   * button itself) isn't double-triggered by also clicking it here.
+   */
+  private wireSpacebarPlayback(): void {
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== " " || !this.audioBuffer) return;
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target instanceof HTMLButtonElement ||
+          target instanceof HTMLSelectElement ||
+          target instanceof HTMLInputElement ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      event.preventDefault();
+      this.el.playToggle.click();
+    });
   }
 
   /** Applies previously saved FFT-size/export-format selections, if any, on startup. */
