@@ -52,7 +52,13 @@
         </div>
 
         <div class="scope-stack" data-scope-stack hidden>
-          <div class="canvas-wrap waveform-wrap" data-waveform-wrap>
+          <div
+            class="canvas-wrap waveform-wrap"
+            data-waveform-wrap
+            tabindex="0"
+            role="group"
+            aria-label="Waveform zoom and pan — use +/- to zoom, 0 to reset"
+          >
             <canvas data-waveform-canvas></canvas>
             <div
               class="trim-handle trim-handle-start"
