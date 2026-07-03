@@ -3,10 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Waveform Forge</title>
+    <title>Cathode: See, trim, and convert audio in your browser</title>
     <meta
       name="description"
-      content="Drop an audio file and get an instant waveform + spectrogram, trim it, and export to MP3/AAC/WAV — entirely in your browser."
+      content="Drop an audio file in your browser to see its waveform and spectrogram, trim it to the sample, and export to MP3, AAC, or WAV. Nothing is uploaded."
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:title"
+      content="Cathode: See, trim, and convert audio in your browser"
+    />
+    <meta
+      property="og:description"
+      content="Drop an audio file in your browser to see its waveform and spectrogram, trim it to the sample, and export to MP3, AAC, or WAV. Nothing is uploaded."
     />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -20,16 +29,26 @@
   <body>
     <div id="app" class="app">
       <header class="topbar">
-        <h1 class="wordmark" data-wordmark aria-label="Waveform Forge">
-          <span>WAVEFORM FORGE</span>
+        <h1 class="wordmark" data-wordmark aria-label="Cathode">
+          <span>CATHODE</span>
         </h1>
-        <div class="file-meta">
-          <span class="file-name" data-file-name>NO SIGNAL</span>
-          <span class="file-duration" data-file-duration></span>
-          <span class="file-tech" data-file-tech></span>
-          <button class="btn btn-ghost" data-load-new type="button" hidden>
-            Load new file
-          </button>
+        <div class="topbar-right">
+          <div class="file-meta">
+            <span class="file-name" data-file-name>NO SIGNAL</span>
+            <span class="file-duration" data-file-duration></span>
+            <span class="file-tech" data-file-tech></span>
+            <button class="btn btn-ghost" data-load-new type="button" hidden>
+              Load new file
+            </button>
+          </div>
+          <a
+            class="topbar-link"
+            href="https://github.com/ctkrug/waveform-forge"
+            target="_blank"
+            rel="noopener"
+            aria-label="View Cathode source on GitHub"
+            >GitHub</a
+          >
         </div>
       </header>
 
@@ -153,6 +172,135 @@
         >
       </footer>
     </div>
+
+    <section class="about" aria-labelledby="about-title">
+      <div class="about-inner">
+        <div class="about-head">
+          <h2 id="about-title" class="about-title">
+            See any audio file, then cut it down to size
+          </h2>
+          <p class="about-sub">
+            Cathode is a browser tool for podcasters, musicians, and anyone who needs to
+            trim or convert a short recording without uploading it to a server. Drop a
+            file in, read it, cut it, and export it, all in this tab.
+          </p>
+        </div>
+
+        <ul class="feature-grid">
+          <li class="feature">
+            <h3>Read the sound, not just hear it</h3>
+            <p>
+              The waveform and spectrogram show you where the silence, the clipping, and
+              the frequency content actually are, with labeled time and frequency axes you
+              can zoom and pan.
+            </p>
+          </li>
+          <li class="feature">
+            <h3>Trim to the exact sample</h3>
+            <p>
+              Drag the in and out handles or nudge them with the arrow keys, then preview
+              just the selection on a loop before you commit to it.
+            </p>
+          </li>
+          <li class="feature">
+            <h3>Convert without the round trip</h3>
+            <p>
+              Export the trimmed clip to MP3, AAC, or WAV. ffmpeg runs as WebAssembly in
+              the tab, so there is no upload and no server queue to wait on.
+            </p>
+          </li>
+          <li class="feature">
+            <h3>Private by construction</h3>
+            <p>
+              The only network request is the one-time download of the audio engine. Your
+              file is never sent anywhere, because there is nowhere on a server for it to
+              go.
+            </p>
+          </li>
+        </ul>
+
+        <div class="about-cols">
+          <div class="howto">
+            <h3 class="panel-label">How it works</h3>
+            <ol class="steps">
+              <li>
+                Drop an audio file onto the panel, or click to choose one. MP3, WAV, AAC,
+                FLAC, OGG, and M4A all work.
+              </li>
+              <li>
+                Zoom and pan the waveform (scroll, pinch, or the <kbd>+</kbd>/<kbd>-</kbd>
+                keys) to find the part you want.
+              </li>
+              <li>
+                Drag the amber handles to set the in and out points, and press play to
+                preview the selection.
+              </li>
+              <li>
+                Pick a format and press Export. The trimmed clip downloads straight to
+                your machine.
+              </li>
+            </ol>
+          </div>
+
+          <div class="faq">
+            <h3 class="panel-label">Questions</h3>
+            <dl>
+              <div class="faq-item">
+                <dt>Is my audio uploaded anywhere?</dt>
+                <dd>
+                  No. Decoding, analysis, trimming, and encoding all run in your browser
+                  tab. The only thing Cathode fetches is the ffmpeg.wasm engine on your
+                  first export, and your browser caches it after that.
+                </dd>
+              </div>
+              <div class="faq-item">
+                <dt>What formats can I open and export?</dt>
+                <dd>
+                  Open MP3, WAV, AAC, FLAC, OGG, and M4A. Export to MP3, AAC, or WAV.
+                  Common formats decode natively; anything the browser cannot read falls
+                  back to ffmpeg.wasm.
+                </dd>
+              </div>
+              <div class="faq-item">
+                <dt>Is there a file size or length limit?</dt>
+                <dd>
+                  Cathode loads the whole file into memory, so it is built for clips
+                  rather than feature-length recordings. A song, a voice memo, or a
+                  podcast segment is the sweet spot.
+                </dd>
+              </div>
+              <div class="faq-item">
+                <dt>Do I need an account or an install?</dt>
+                <dd>
+                  Neither. It is a single static web page. Open it and start dropping
+                  files.
+                </dd>
+              </div>
+              <div class="faq-item">
+                <dt>Does it work on my phone?</dt>
+                <dd>
+                  Yes. The layout adapts to phone width and the trim handles respond to
+                  touch, though large files are more comfortable on a desktop.
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <span class="site-footer-mark">Cathode · MIT licensed</span>
+      <span class="site-footer-links">
+        <a href="https://github.com/ctkrug/waveform-forge" target="_blank" rel="noopener"
+          >github.com/ctkrug/waveform-forge</a
+        >
+        <a href="https://apps.charliekrug.com" target="_blank" rel="noopener"
+          >More by Charlie Krug → apps.charliekrug.com</a
+        >
+      </span>
+    </footer>
+
     <script type="module" src="./src/main.ts"></script>
   </body>
 </html>
