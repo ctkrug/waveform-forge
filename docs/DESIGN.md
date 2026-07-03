@@ -2,7 +2,7 @@
 
 ## 1. Aesthetic direction
 
-**Waveform Forge is analog studio hardware:** a dark brushed-metal rack fascia housing
+**Cathode is analog studio hardware:** a dark brushed-metal rack fascia housing
 a phosphor-green CRT scope display, amber panel lighting, and knurled-metal controls —
 the tool should feel like a piece of gear you'd find bolted into a mixing desk, not a
 web form. This is distinct from a generic "dark cards + one accent" theme: surfaces
@@ -54,7 +54,7 @@ a single rack-mounted display panel. It owns the majority of the viewport everyw
 
 ## 4. Signature detail
 
-The wordmark "WAVEFORM FORGE" is traced on load by a scanline sweep — a thin
+The wordmark "CATHODE" is traced on load by a scanline sweep — a thin
 `--accent`-colored line animates left-to-right once across the logotype (CSS
 `clip-path`/mask animation, ~800ms, `prefers-reduced-motion`-aware no-op fallback),
 as if the CRT just powered on. The empty state (before a file is loaded) shows a flat,

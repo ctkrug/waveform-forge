@@ -51,7 +51,7 @@ export function validateAudioFile(file: FileLike): ValidationResult {
   if (!hasAudioMime && !hasAudioExtension) {
     return {
       valid: false,
-      reason: `"${file.name}" doesn't look like an audio file Waveform Forge can read.`,
+      reason: `"${file.name}" doesn't look like an audio file Cathode can read.`,
     };
   }
 
