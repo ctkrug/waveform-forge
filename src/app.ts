@@ -660,7 +660,13 @@ export class WaveformForgeApp {
 
     try {
       this.player.stop();
-      const { buffer, usedFallback } = await decodeAudioFile(file);
+      const { buffer, usedFallback } = await decodeAudioFile(file, () => {
+        if (generation === this.sessionGeneration) {
+          this.setStatus(
+            `Native decode failed — falling back to ffmpeg.wasm (first use downloads ~30MB)...`,
+          );
+        }
+      });
       // A newer handleFile() call has since started (e.g. the user dropped
       // a second file before this one finished decoding) — that load owns
       // the UI now, so abandon this one rather than clobbering it.
