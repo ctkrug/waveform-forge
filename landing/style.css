@@ -107,7 +107,9 @@ a {
   color: var(--text-muted);
   text-decoration: none;
   border-bottom: 1px solid transparent;
-  transition: border-color var(--motion-ui) var(--ease-out), color var(--motion-ui) var(--ease-out);
+  transition:
+    border-color var(--motion-ui) var(--ease-out),
+    color var(--motion-ui) var(--ease-out);
 }
 
 .nav-link:hover,
@@ -226,14 +228,17 @@ main {
   min-height: 280px;
   border-radius: var(--radius-panel);
   background: var(--surface-1);
-  box-shadow: var(--shadow-panel), inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+  box-shadow:
+    var(--shadow-panel),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.04);
   overflow: hidden;
 }
 
 .hero-scope-grid {
   position: absolute;
   inset: 0;
-  background-image: repeating-linear-gradient(
+  background-image:
+    repeating-linear-gradient(
       to right,
       rgba(138, 143, 156, 0.14) 0,
       rgba(138, 143, 156, 0.14) 1px,
@@ -347,7 +352,9 @@ main {
   padding: var(--space-4);
   background: var(--surface-1);
   border-radius: var(--radius-panel);
-  box-shadow: var(--shadow-panel), inset 0 1px 0 0 rgb(255 255 255 / 0.04);
+  box-shadow:
+    var(--shadow-panel),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.04);
 }
 
 .privacy-readout {
