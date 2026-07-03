@@ -25,7 +25,7 @@ Web Audio API. Your file never leaves the browser tab.
   labeled time/frequency axes and a playhead synced to playback.
 - **Trim** with draggable, keyboard- and touch-nudgeable in/out handles directly on the
   waveform, with sample-accurate bounds and live preview of just the selection,
-  optionally looped, with a live VU-style peak meter.
+  optionally looped, with a live VU-style level meter (RMS fill, peak clip detection).
 - **Export** the trimmed selection to MP3, AAC, or WAV via `ffmpeg.wasm`, entirely
   in-browser, with a progress indicator and a one-click download. Your last-used FFT
   size and export format are remembered for next time.
