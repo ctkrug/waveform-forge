@@ -20,6 +20,25 @@ const OUTPUT_MIME_TYPES: Record<ExportFormat, string> = {
 
 let instance: FFmpeg | null = null;
 let loadPromise: Promise<FFmpeg> | null = null;
+let queue: Promise<void> = Promise.resolve();
+
+/**
+ * Chains `task` onto the shared ffmpeg call queue so it only starts once
+ * every previously queued operation has settled. ffmpeg-core runs as a
+ * single non-reentrant WASM instance: `demuxToWav` (decode fallback) and
+ * `transcode` (export) can otherwise be triggered concurrently — e.g.
+ * loading a new file that needs the fallback path while an export from the
+ * previous file is still transcoding — and issuing two overlapping `exec()`
+ * calls into the same instance is undefined behavior.
+ */
+function withFfmpegLock<T>(task: () => Promise<T>): Promise<T> {
+  const result = queue.then(task, task);
+  queue = result.then(
+    () => undefined,
+    () => undefined,
+  );
+  return result;
+}
 
 /**
  * Lazily loads and caches the shared ffmpeg.wasm instance. The ~30MB core
@@ -52,18 +71,20 @@ export async function demuxToWav(file: File): Promise<ArrayBuffer> {
   const inputName = `input-${crypto.randomUUID()}`;
   const outputName = `${inputName}.wav`;
 
-  await ffmpeg.writeFile(inputName, await fetchFile(file));
-  try {
-    const code = await ffmpeg.exec(["-i", inputName, outputName]);
-    if (code !== 0) {
-      throw new Error(`ffmpeg demux failed with exit code ${code}`);
+  return withFfmpegLock(async () => {
+    await ffmpeg.writeFile(inputName, await fetchFile(file));
+    try {
+      const code = await ffmpeg.exec(["-i", inputName, outputName]);
+      if (code !== 0) {
+        throw new Error(`ffmpeg demux failed with exit code ${code}`);
+      }
+      const data = await ffmpeg.readFile(outputName);
+      return new Uint8Array(data as Uint8Array).buffer;
+    } finally {
+      await ffmpeg.deleteFile(inputName).catch(() => undefined);
+      await ffmpeg.deleteFile(outputName).catch(() => undefined);
     }
-    const data = await ffmpeg.readFile(outputName);
-    return new Uint8Array(data as Uint8Array).buffer;
-  } finally {
-    await ffmpeg.deleteFile(inputName).catch(() => undefined);
-    await ffmpeg.deleteFile(outputName).catch(() => undefined);
-  }
+  });
 }
 
 /**
@@ -80,32 +101,38 @@ export async function transcode(
   const inputName = `trim-${crypto.randomUUID()}.wav`;
   const outputName = OUTPUT_FILENAMES[format];
 
-  const progressListener = ({ progress }: { progress: number }) => {
-    onProgress?.(Math.min(1, Math.max(0, progress)));
-  };
-  if (onProgress) {
-    ffmpeg.on("progress", progressListener);
-  }
-
-  await ffmpeg.writeFile(inputName, new Uint8Array(wavBuffer));
-  try {
-    const args =
-      format === "wav"
-        ? ["-i", inputName, outputName]
-        : ["-i", inputName, "-b:a", "192k", outputName];
-    const code = await ffmpeg.exec(args);
-    if (code !== 0) {
-      throw new Error(`ffmpeg transcode to ${format} failed with exit code ${code}`);
-    }
-    const data = await ffmpeg.readFile(outputName);
-    return new Blob([new Uint8Array(data as Uint8Array)], {
-      type: OUTPUT_MIME_TYPES[format],
-    });
-  } finally {
+  return withFfmpegLock(async () => {
+    // Registered only once this call actually owns the lock: if it were
+    // registered before queuing, a call still waiting its turn would start
+    // receiving progress events from whatever unrelated operation is
+    // currently running.
+    const progressListener = ({ progress }: { progress: number }) => {
+      onProgress?.(Math.min(1, Math.max(0, progress)));
+    };
     if (onProgress) {
-      ffmpeg.off("progress", progressListener);
+      ffmpeg.on("progress", progressListener);
     }
-    await ffmpeg.deleteFile(inputName).catch(() => undefined);
-    await ffmpeg.deleteFile(outputName).catch(() => undefined);
-  }
+
+    await ffmpeg.writeFile(inputName, new Uint8Array(wavBuffer));
+    try {
+      const args =
+        format === "wav"
+          ? ["-i", inputName, outputName]
+          : ["-i", inputName, "-b:a", "192k", outputName];
+      const code = await ffmpeg.exec(args);
+      if (code !== 0) {
+        throw new Error(`ffmpeg transcode to ${format} failed with exit code ${code}`);
+      }
+      const data = await ffmpeg.readFile(outputName);
+      return new Blob([new Uint8Array(data as Uint8Array)], {
+        type: OUTPUT_MIME_TYPES[format],
+      });
+    } finally {
+      if (onProgress) {
+        ffmpeg.off("progress", progressListener);
+      }
+      await ffmpeg.deleteFile(inputName).catch(() => undefined);
+      await ffmpeg.deleteFile(outputName).catch(() => undefined);
+    }
+  });
 }
