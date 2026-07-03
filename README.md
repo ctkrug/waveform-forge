@@ -24,9 +24,13 @@ Web Audio API. Your file never leaves the browser tab.
   spectrogram (FFT-based frequency-over-time heatmap, adjustable FFT size), both with
   labeled time/frequency axes and a playhead synced to playback.
 - **Trim** with draggable, keyboard- and touch-nudgeable in/out handles directly on the
-  waveform, with sample-accurate bounds and live preview of just the selection.
+  waveform, with sample-accurate bounds and live preview of just the selection,
+  optionally looped, with a live VU-style peak meter.
 - **Export** the trimmed selection to MP3, AAC, or WAV via `ffmpeg.wasm`, entirely
-  in-browser, with a progress indicator and a one-click download.
+  in-browser, with a progress indicator and a one-click download. Your last-used FFT
+  size and export format are remembered for next time.
+- Load a second file without a page reload, and see its sample rate/channel count at a
+  glance.
 - Fully static, zero-backend deployment — works from a single `dist/` directory at any
   subpath.
 
