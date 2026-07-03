@@ -76,6 +76,13 @@ export class WaveformForgeApp {
   private playheadRafId: number | null = null;
   private viewWindow: ViewWindow = { start: 0, end: 0 };
   private spectrogramFftSize = DEFAULT_SPECTROGRAM_FFT_SIZE;
+  private readonly activePointers = new Map<number, number>();
+  private panState: { startClientX: number; startWindow: ViewWindow } | null = null;
+  private pinchState: {
+    startDistance: number;
+    startWindow: ViewWindow;
+    pivotRatio: number;
+  } | null = null;
 
   constructor() {
     this.el = {
@@ -166,30 +173,43 @@ export class WaveformForgeApp {
       if (event.target instanceof HTMLElement && event.target.closest(".trim-handle"))
         return;
 
-      const rect = waveformWrap.getBoundingClientRect();
-      const startClientX = event.clientX;
-      const startWindow = this.viewWindow;
       waveformWrap.setPointerCapture(event.pointerId);
+      this.activePointers.set(event.pointerId, event.clientX);
 
-      const onMove = (moveEvent: PointerEvent) => {
-        if (!this.audioBuffer || rect.width === 0) return;
+      if (this.activePointers.size === 2) {
+        this.panState = null;
+        this.pinchState = this.beginPinch(waveformWrap);
+      } else if (this.activePointers.size === 1) {
+        this.panState = { startClientX: event.clientX, startWindow: this.viewWindow };
+      }
+    });
+
+    waveformWrap.addEventListener("pointermove", (event) => {
+      if (!this.audioBuffer || !this.activePointers.has(event.pointerId)) return;
+      this.activePointers.set(event.pointerId, event.clientX);
+
+      if (this.pinchState && this.activePointers.size >= 2) {
+        this.applyPinch();
+      } else if (this.panState && this.activePointers.size === 1) {
+        const rect = waveformWrap.getBoundingClientRect();
+        if (rect.width === 0) return;
+        const { startClientX, startWindow } = this.panState;
         const deltaSeconds =
-          (-(moveEvent.clientX - startClientX) / rect.width) *
+          (-(event.clientX - startClientX) / rect.width) *
           (startWindow.end - startWindow.start);
         this.setViewWindow(
           panWindow(startWindow, this.audioBuffer.duration, deltaSeconds),
         );
-      };
-      const onUp = () => {
-        waveformWrap.removeEventListener("pointermove", onMove);
-        waveformWrap.removeEventListener("pointerup", onUp);
-        waveformWrap.removeEventListener("pointercancel", onUp);
-      };
-
-      waveformWrap.addEventListener("pointermove", onMove);
-      waveformWrap.addEventListener("pointerup", onUp);
-      waveformWrap.addEventListener("pointercancel", onUp);
+      }
     });
+
+    const endPointer = (event: PointerEvent) => {
+      this.activePointers.delete(event.pointerId);
+      if (this.activePointers.size < 2) this.pinchState = null;
+      if (this.activePointers.size === 0) this.panState = null;
+    };
+    waveformWrap.addEventListener("pointerup", endPointer);
+    waveformWrap.addEventListener("pointercancel", endPointer);
 
     waveformWrap.addEventListener("dblclick", () => {
       if (!this.audioBuffer) return;
@@ -213,6 +233,42 @@ export class WaveformForgeApp {
         this.setViewWindow({ start: 0, end: this.audioBuffer.duration });
       }
     });
+  }
+
+  /** Captures the starting pinch distance/pivot from the two active touch pointers. */
+  private beginPinch(waveformWrap: HTMLElement): {
+    startDistance: number;
+    startWindow: ViewWindow;
+    pivotRatio: number;
+  } | null {
+    const positions = [...this.activePointers.values()];
+    const [x1, x2] = positions;
+    const startDistance = Math.abs(x2 - x1);
+    if (startDistance === 0) return null;
+
+    const rect = waveformWrap.getBoundingClientRect();
+    const midClientX = (x1 + x2) / 2;
+    const pivotRatio = rect.width === 0 ? 0.5 : (midClientX - rect.left) / rect.width;
+    return { startDistance, startWindow: this.viewWindow, pivotRatio };
+  }
+
+  /** Applies the live pinch distance as a zoom factor relative to the pinch's start. */
+  private applyPinch(): void {
+    if (!this.pinchState || !this.audioBuffer) return;
+    const positions = [...this.activePointers.values()];
+    const [x1, x2] = positions;
+    const distance = Math.abs(x2 - x1);
+    if (distance === 0) return;
+
+    const factor = this.pinchState.startDistance / distance;
+    this.setViewWindow(
+      zoomWindow(
+        this.pinchState.startWindow,
+        this.audioBuffer.duration,
+        factor,
+        this.pinchState.pivotRatio,
+      ),
+    );
   }
 
   private setViewWindow(view: ViewWindow): void {
