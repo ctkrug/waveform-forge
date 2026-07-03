@@ -14,6 +14,18 @@ export class SelectionPlayer {
   private onEnded: () => void = () => {};
   private readonly analyser: AnalyserNode;
   private readonly analyserBuffer: Float32Array<ArrayBuffer>;
+  /**
+   * Bumped by both `play()` and `stop()`; `play()` captures its own value
+   * right after calling `stop()` and checks it again after the
+   * `context.resume()` await. `resume()` only actually awaits anything on
+   * the first playback (a fresh AudioContext starts suspended) — without
+   * this, a second `play()` (or a `stop()`) landing while the first is
+   * still resuming couldn't be seen by that first call, which would go on
+   * to create and start a source nothing could ever stop: either two
+   * overlapping sources playing at once, or one starting up after the
+   * player was told to stop.
+   */
+  private playToken = 0;
 
   constructor(private readonly context: AudioContext) {
     this.analyser = context.createAnalyser();
@@ -31,9 +43,18 @@ export class SelectionPlayer {
   }
 
   async play(buffer: AudioBuffer, selection: TrimSelection, loop = false): Promise<void> {
+    // stop() first (it also bumps playToken, invalidating any play() call
+    // still awaiting a pending resume), then take this call's own token —
+    // taking the token before stop() would have this call invalidate itself.
     this.stop();
+    const token = ++this.playToken;
     if (this.context.state === "suspended") {
       await this.context.resume();
+      // A newer play() call has since started (e.g. a fast double-click on
+      // the transport button) and owns playback now — starting a source
+      // here too would leave two overlapping sources running with only one
+      // reachable through `stop()`.
+      if (token !== this.playToken) return;
     }
 
     const source = this.context.createBufferSource();
@@ -63,6 +84,11 @@ export class SelectionPlayer {
   }
 
   stop(): void {
+    // Invalidates any play() call still awaiting a pending resume() too —
+    // without this, stopping (or resetting the session) during that narrow
+    // window wouldn't stop a source that hasn't been created yet, and it
+    // would still start playing once the resume settles.
+    this.playToken++;
     if (this.sourceNode) {
       this.sourceNode.onended = null;
       this.sourceNode.stop();
