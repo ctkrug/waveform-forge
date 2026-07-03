@@ -12,8 +12,15 @@ export class SelectionPlayer {
   private selectionAtStart: TrimSelection = { start: 0, end: 0 };
   private loopAtStart = false;
   private onEnded: () => void = () => {};
+  private readonly analyser: AnalyserNode;
+  private readonly analyserBuffer: Float32Array<ArrayBuffer>;
 
-  constructor(private readonly context: AudioContext) {}
+  constructor(private readonly context: AudioContext) {
+    this.analyser = context.createAnalyser();
+    this.analyser.fftSize = 256;
+    this.analyser.connect(context.destination);
+    this.analyserBuffer = new Float32Array(this.analyser.fftSize);
+  }
 
   subscribe(onEnded: () => void): void {
     this.onEnded = onEnded;
@@ -31,7 +38,7 @@ export class SelectionPlayer {
 
     const source = this.context.createBufferSource();
     source.buffer = buffer;
-    source.connect(this.context.destination);
+    source.connect(this.analyser);
     source.onended = () => {
       if (this.sourceNode === source) {
         this.sourceNode = null;
@@ -61,6 +68,18 @@ export class SelectionPlayer {
       this.sourceNode.stop();
       this.sourceNode = null;
     }
+  }
+
+  /** Peak absolute sample amplitude (0..1+) over the most recent audio frame, or 0 when stopped. */
+  peakLevel(): number {
+    if (!this.sourceNode) return 0;
+    this.analyser.getFloatTimeDomainData(this.analyserBuffer);
+    let peak = 0;
+    for (const sample of this.analyserBuffer) {
+      const abs = Math.abs(sample);
+      if (abs > peak) peak = abs;
+    }
+    return peak;
   }
 
   /** Current absolute playback position in seconds within the full file, or null when stopped. */
