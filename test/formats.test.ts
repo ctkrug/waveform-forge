@@ -49,4 +49,16 @@ describe("validateAudioFile", () => {
       true,
     );
   });
+
+  it("accepts an extensionless filename when the MIME type is audio", () => {
+    expect(
+      validateAudioFile({ name: "voicemail", type: "audio/wav", size: 100 }).valid,
+    ).toBe(true);
+  });
+
+  it("rejects an extensionless filename with no usable MIME type", () => {
+    const result = validateAudioFile({ name: "mystery", type: "", size: 100 });
+    expect(result.valid).toBe(false);
+    expect(result.reason).toContain("doesn't look like an audio file");
+  });
 });
