@@ -64,7 +64,11 @@ export function fft(real: Float64Array, imag: Float64Array): void {
   }
 }
 
-/** Generates a periodic Hann window of the given size ([0, 1], zero at both ends). */
+/**
+ * Generates a symmetric Hann window of the given size ([0, 1], zero at both
+ * ends) — the standard choice for windowing a fixed analysis frame before
+ * an FFT, as opposed to the periodic variant used for OLA resynthesis.
+ */
 export function hannWindow(size: number): Float64Array {
   const window = new Float64Array(size);
   if (size === 1) {
