@@ -56,7 +56,17 @@ export async function getFfmpeg(): Promise<FFmpeg> {
       });
       instance = ffmpeg;
       return ffmpeg;
-    })();
+    })().catch((error: unknown) => {
+      // A failed load (e.g. a transient network error fetching the ~30MB
+      // core) must not be cached — leaving loadPromise set to a rejected
+      // promise would permanently break decode-fallback and export for the
+      // rest of the page session, even after connectivity recovers.
+      // Confirmed live: without this reset, a second attempt after the
+      // network came back still failed with the first attempt's stale
+      // "Failed to fetch".
+      loadPromise = null;
+      throw error;
+    });
   }
   return loadPromise;
 }
