@@ -114,6 +114,20 @@
         >
           <span aria-hidden="true">&#8635;</span>
         </button>
+        <div
+          class="level-meter"
+          data-level-meter
+          role="meter"
+          aria-label="Playback peak level"
+          aria-valuemin="-60"
+          aria-valuemax="0"
+          aria-valuenow="-60"
+        >
+          <div class="level-meter-track">
+            <div class="level-meter-fill" data-level-meter-fill></div>
+          </div>
+          <span class="level-meter-clip" data-level-meter-clip aria-hidden="true">CLIP</span>
+        </div>
         <span class="time-readout" data-time-readout>00:00.000 / 00:00.000</span>
         <span class="trim-readout" data-trim-readout>trim 00:00.000&ndash;00:00.000</span>
         <label class="field">
