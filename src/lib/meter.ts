@@ -24,3 +24,21 @@ export function dbToMeterRatio(db: number): number {
 export function isClipping(amplitude: number): boolean {
   return amplitude >= 1;
 }
+
+/**
+ * Root-mean-square amplitude of a sample block. A real VU meter reads
+ * closer to average/RMS loudness than to instantaneous peak — peak alone
+ * makes the needle flicker with every transient rather than settling on
+ * the perceived level, so the level meter's fill uses this while
+ * `isClipping` still checks peak (a single full-scale sample should still
+ * light the clip LED even if it barely moves the RMS).
+ */
+export function rmsAmplitude(samples: ArrayLike<number>): number {
+  if (samples.length === 0) return 0;
+  let sumOfSquares = 0;
+  for (let i = 0; i < samples.length; i++) {
+    const sample = samples[i];
+    sumOfSquares += sample * sample;
+  }
+  return Math.sqrt(sumOfSquares / samples.length);
+}
