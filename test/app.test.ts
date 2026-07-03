@@ -534,6 +534,36 @@ describe("WaveformForgeApp file intake", () => {
 
     expect(elements.statusLine.textContent).toBe('Couldn\'t decode "bad.mp3".');
   });
+
+  it("suppresses the fallback status message once the session has moved on", async () => {
+    // decode.ts's onFallback fires after the native decodeAudioData()
+    // rejection settles — inherently asynchronous relative to handleFile's
+    // synchronous start, leaving a real window for the user to reset the
+    // session (or load another file) before it fires.
+    await createApp();
+    let triggerFallback: () => void = () => {};
+    decodeAudioFileMock.mockImplementationOnce(
+      (_file: File, fallback: () => void) =>
+        new Promise((resolve) => {
+          triggerFallback = () => {
+            fallback();
+            resolve({ buffer: fakeAudioBuffer(), usedFallback: true });
+          };
+        }),
+    );
+    (elements.fileInput as FakeInputElement).files = [fakeFile({ name: "slow.mp3" })];
+    elements.fileInput.dispatch("change");
+    await Promise.resolve();
+
+    elements.loadNewButton.dispatch("click");
+    triggerFallback();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(elements.statusLine.textContent).toBe("");
+    expect(elements.dropzone.hidden).toBe(false);
+  });
 });
 
 describe("WaveformForgeApp session reset", () => {
