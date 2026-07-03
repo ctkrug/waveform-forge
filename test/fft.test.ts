@@ -60,6 +60,13 @@ describe("fft", () => {
   it("rejects lengths that are not a power of two", () => {
     expect(() => fft(new Float64Array(6), new Float64Array(6))).toThrow();
   });
+
+  it("no-ops on an empty signal instead of throwing", () => {
+    const real = new Float64Array(0);
+    const imag = new Float64Array(0);
+    expect(() => fft(real, imag)).not.toThrow();
+    expect(real.length).toBe(0);
+  });
 });
 
 describe("hannWindow", () => {
