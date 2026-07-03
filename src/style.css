@@ -137,6 +137,10 @@ body {
   color: var(--text);
 }
 
+.file-tech {
+  color: var(--text-muted);
+}
+
 /* ---------- scope panel ---------- */
 
 .scope-panel {
@@ -581,6 +585,10 @@ body {
     position: sticky;
     bottom: 0;
     padding: var(--space-1) var(--space-2);
+  }
+
+  .file-tech {
+    display: none;
   }
 
   .field {
