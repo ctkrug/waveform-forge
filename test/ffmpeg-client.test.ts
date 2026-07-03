@@ -127,6 +127,14 @@ describe("demuxToWav / transcode call serialization", () => {
 
     expect(deleteFileMock).toHaveBeenCalledTimes(2);
   });
+
+  it("rejects with the exit code when ffmpeg reports a non-zero demux result", async () => {
+    loadMock.mockResolvedValue(undefined);
+    execMock.mockResolvedValue(1);
+    const { demuxToWav } = await freshModule();
+
+    await expect(demuxToWav(fakeFile)).rejects.toThrow(/exit code 1/);
+  });
 });
 
 describe("transcode", () => {
