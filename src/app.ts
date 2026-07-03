@@ -403,7 +403,7 @@ export class WaveformForgeApp {
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       this.setStatus(`Exported ${format.toUpperCase()}.`);
     } catch (error) {
-      this.showError(
+      this.setStatusError(
         error instanceof Error ? `Export failed: ${error.message}` : "Export failed.",
       );
     } finally {
@@ -425,15 +425,37 @@ export class WaveformForgeApp {
         return;
       }
       if (!this.audioBuffer) return;
-      void this.player.play(
+      void this.beginPlayback();
+    });
+  }
+
+  /**
+   * Starts playback and only then flips the transport to "playing" state.
+   * `SelectionPlayer.play` awaits `AudioContext.resume()` on the first
+   * playback (the context always starts suspended), which can take longer
+   * than a single animation frame. Starting the playhead poll loop
+   * synchronously used to race that: the loop's first tick would find no
+   * source node yet, read it as "already ended," and immediately bounce
+   * the play button back to its paused state before audio had even
+   * started.
+   */
+  private async beginPlayback(): Promise<void> {
+    if (!this.audioBuffer) return;
+    try {
+      await this.player.play(
         this.audioBuffer,
         this.trimHandles.getSelection(),
         this.loopEnabled,
       );
-      this.el.playIcon.textContent = ICON_PAUSE;
-      this.el.playToggle.setAttribute("aria-label", "Pause");
-      this.startPlayheadLoop();
-    });
+    } catch (error) {
+      this.setStatusError(
+        error instanceof Error ? `Playback failed: ${error.message}` : "Playback failed.",
+      );
+      return;
+    }
+    this.el.playIcon.textContent = ICON_PAUSE;
+    this.el.playToggle.setAttribute("aria-label", "Pause");
+    this.startPlayheadLoop();
   }
 
   private startPlayheadLoop(): void {
@@ -612,9 +634,15 @@ export class WaveformForgeApp {
     this.el.statusLine.classList.remove("is-error");
   }
 
-  private showError(message: string): void {
+  /** Reports an error against an already-loaded file (playback/export) without tearing down its UI. */
+  private setStatusError(message: string): void {
     this.el.statusLine.textContent = message;
     this.el.statusLine.classList.add("is-error");
+  }
+
+  /** Reports an intake error (bad file / failed decode) — no file is loaded, so fall back to the dropzone. */
+  private showError(message: string): void {
+    this.setStatusError(message);
     this.showDropzone();
     this.el.dropzone.classList.add("is-error");
   }
