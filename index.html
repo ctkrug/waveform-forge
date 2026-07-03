@@ -93,6 +93,15 @@
         <span class="time-readout" data-time-readout>00:00.000 / 00:00.000</span>
         <span class="trim-readout" data-trim-readout>trim 00:00.000&ndash;00:00.000</span>
         <label class="field">
+          <span class="field-label">FFT</span>
+          <select class="select" data-fft-size-select aria-label="Spectrogram FFT size">
+            <option value="512">512</option>
+            <option value="1024" selected>1024</option>
+            <option value="2048">2048</option>
+            <option value="4096">4096</option>
+          </select>
+        </label>
+        <label class="field">
           <span class="field-label">Format</span>
           <select class="select" data-format-select>
             <option value="mp3">MP3</option>
