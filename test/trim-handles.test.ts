@@ -113,6 +113,30 @@ describe("TrimHandles keyboard nudging", () => {
   });
 });
 
+describe("TrimHandles view window + subscription", () => {
+  it("repositions the region against a narrowed view window without changing the selection", () => {
+    const { handles, el } = createHandles();
+    handles.setDuration(10);
+
+    handles.setViewWindow(2, 6);
+
+    expect(handles.getSelection()).toEqual({ start: 0, end: 10 });
+    // start=0 sits left of the visible [2,6] window -> clamped to 0%.
+    expect(el.region.style.left).toBe("0%");
+  });
+
+  it("notifies subscribers with the new selection on every change", () => {
+    const { handles, el } = createHandles();
+    handles.setDuration(10);
+    const seen: Array<{ start: number; end: number }> = [];
+    handles.subscribe((selection) => seen.push(selection));
+
+    el.startHandle.dispatch("keydown", { key: "ArrowRight" });
+
+    expect(seen).toEqual([{ start: 0.05, end: 10 }]);
+  });
+});
+
 describe("TrimHandles pointer dragging", () => {
   it("stops a start-handle drag short of the end handle", () => {
     const { handles, el } = createHandles();
