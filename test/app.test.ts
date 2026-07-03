@@ -910,14 +910,43 @@ describe("WaveformForgeApp export", () => {
   });
 
   it("persists the export format preference on change", async () => {
+    const stored = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => stored.get(key) ?? null,
+      setItem: (key: string, value: string) => stored.set(key, value),
+    });
     await createApp();
-    (elements.formatSelect as FakeSelectElement).value = "wav";
 
+    (elements.formatSelect as FakeSelectElement).value = "wav";
     elements.formatSelect.dispatch("change");
 
-    // No localStorage in this harness -> writePref degrades to a no-op;
-    // this just confirms the change handler runs without throwing.
-    expect(true).toBe(true);
+    expect(stored.get("waveform-forge:export-format")).toBe("wav");
+  });
+});
+
+describe("WaveformForgeApp spectrogram settings", () => {
+  it("recomputes and re-renders the spectrogram when the FFT size changes", async () => {
+    await createApp();
+    await loadFile("clip.mp3", 2);
+    const canvas = (
+      fakeDocument.querySelector("[data-spectrogram-canvas]") as unknown as {
+        getContext: () => { fillRect: ReturnType<typeof vi.fn> };
+      }
+    ).getContext();
+    const fillRectSpy = vi.spyOn(canvas, "fillRect");
+
+    (elements.fftSizeSelect as FakeSelectElement).value = "2048";
+    elements.fftSizeSelect.dispatch("change");
+
+    // A re-render redraws the spectrogram heatmap from scratch.
+    expect(fillRectSpy).toHaveBeenCalled();
+  });
+
+  it("does nothing on an FFT size change before a file is loaded", async () => {
+    await createApp();
+
+    (elements.fftSizeSelect as FakeSelectElement).value = "2048";
+    expect(() => elements.fftSizeSelect.dispatch("change")).not.toThrow();
   });
 });
 
