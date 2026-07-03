@@ -254,10 +254,12 @@ function setupFakeDom(): void {
   }
   bySelector.set("[data-waveform-canvas]", fakeCanvas() as unknown as FakeElement);
   bySelector.set("[data-spectrogram-canvas]", fakeCanvas() as unknown as FakeElement);
+  // Mirrors index.html's actual <select data-fft-size-select> options.
   (elements.fftSizeSelect as FakeSelectElement).options = [
     { value: "512" },
     { value: "1024" },
     { value: "2048" },
+    { value: "4096" },
   ];
   (elements.fftSizeSelect as FakeSelectElement).value = "1024";
   (elements.formatSelect as FakeSelectElement).options = [
