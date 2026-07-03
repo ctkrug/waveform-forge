@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { formatDuration } from "../src/lib/format";
 
 /**
  * WaveformForgeApp is the top-level DOM controller: ~30 elements wired via
@@ -200,6 +201,14 @@ interface FakeDocument {
 let elements: Record<string, FakeElement>;
 let fakeAudioContext: FakeAudioContext;
 let fakeDocument: FakeDocument;
+let rafQueue: Array<() => void> = [];
+
+/** Runs exactly one queued animation frame (app.ts's playhead poll loop re-queues itself each tick). */
+function tickRaf(): void {
+  const queue = rafQueue;
+  rafQueue = [];
+  for (const cb of queue) cb();
+}
 
 const SELECTORS = [
   ["dropzone", "[data-dropzone]", FakeElement],
@@ -282,10 +291,11 @@ async function createApp() {
       observe() {}
     },
   );
-  vi.stubGlobal(
-    "requestAnimationFrame",
-    vi.fn(() => 1),
-  );
+  rafQueue = [];
+  vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+    rafQueue.push(() => cb(0));
+    return rafQueue.length;
+  });
   vi.stubGlobal("cancelAnimationFrame", vi.fn());
   vi.stubGlobal("URL", {
     createObjectURL: vi.fn(() => "blob:fake"),
@@ -326,6 +336,23 @@ describe("WaveformForgeApp construction", () => {
 });
 
 describe("WaveformForgeApp file intake", () => {
+  it("opens the file picker on dropzone click or Enter/Space, but not other keys", async () => {
+    await createApp();
+    const clickSpy = vi.spyOn(elements.fileInput, "click");
+
+    elements.dropzone.dispatch("click");
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+
+    elements.dropzone.dispatch("keydown", { key: "Enter" });
+    expect(clickSpy).toHaveBeenCalledTimes(2);
+
+    elements.dropzone.dispatch("keydown", { key: " " });
+    expect(clickSpy).toHaveBeenCalledTimes(3);
+
+    elements.dropzone.dispatch("keydown", { key: "Tab" });
+    expect(clickSpy).toHaveBeenCalledTimes(3);
+  });
+
   it("rejects an invalid file without touching the decoder", async () => {
     await createApp();
 
@@ -657,6 +684,39 @@ describe("WaveformForgeApp playback", () => {
 
     expect(elements.loopToggle.getAttribute("aria-pressed")).toBe("true");
     expect(fakeAudioContext.createBufferSource).not.toHaveBeenCalled();
+  });
+
+  it("updates the playhead, time readout, and level meter on each animation frame", async () => {
+    await createApp();
+    await loadFile("clip.mp3", 0.05);
+    elements.playToggle.dispatch("click");
+    await Promise.resolve();
+    await Promise.resolve();
+    fakeAudioContext.currentTime = 0.01;
+
+    tickRaf();
+
+    expect(elements.playhead.style.left).toBe("20%");
+    expect(elements.timeReadout.textContent).toBe(
+      `${formatDuration(0.01)} / ${formatDuration(0.05)}`,
+    );
+    expect(elements.levelMeter.getAttribute("aria-valuenow")).toBe("-60.0");
+    expect(elements.levelMeterFill.style.width).toBe("0%");
+  });
+
+  it("stops the playhead loop and resets the transport once the source ends naturally", async () => {
+    await createApp();
+    await loadFile("clip.mp3", 0.05);
+    elements.playToggle.dispatch("click");
+    await Promise.resolve();
+    await Promise.resolve();
+    const source = fakeAudioContext.createBufferSource.mock.results[0]
+      .value as FakeSourceNode;
+
+    source.onended?.();
+
+    expect(elements.playIcon.textContent).toBe("▶");
+    expect(elements.playToggle.getAttribute("aria-label")).toBe("Play");
   });
 });
 
